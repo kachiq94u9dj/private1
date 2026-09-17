@@ -1,0 +1,111 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", sans-serif;
+  background: #f7f7f8;
+  color: #1a1a1a;
+}
+
+.login-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  gap: 12px;
+  text-align: center;
+}
+
+.button,
+button {
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  background: #fff;
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+}
+
+.button {
+  background: #1a73e8;
+  color: #fff;
+  border: none;
+}
+
+.nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 24px;
+  background: #fff;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.nav-links a {
+  margin-right: 16px;
+  text-decoration: none;
+  color: #333;
+}
+
+.nav-links a.active {
+  font-weight: bold;
+  color: #1a73e8;
+}
+
+.nav-user {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.content {
+  max-width: 900px;
+  margin: 24px auto;
+  padding: 0 16px;
+}
+
+.grid-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 12px;
+}
+
+.grid-table th,
+.grid-table td {
+  border: 1px solid #e0e0e0;
+  padding: 6px 10px;
+  text-align: left;
+}
+
+.symbol-btn {
+  margin-right: 4px;
+  min-width: 36px;
+}
+
+.symbol-btn.selected {
+  background: #1a73e8;
+  color: #fff;
+  border-color: #1a73e8;
+}
+
+.inline-form {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin: 12px 0;
+}
+
+.hint {
+  color: #777;
+  font-size: 0.85em;
+}
+
+.center-message {
+  text-align: center;
+  margin-top: 40vh;
+}

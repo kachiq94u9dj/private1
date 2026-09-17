@@ -1,0 +1,21 @@
+name = "shift-app-api"
+main = "src/index.ts"
+compatibility_date = "2024-09-25"
+compatibility_flags = ["nodejs_compat"]
+
+[[kv_namespaces]]
+binding = "SESSIONS"
+id = "REPLACE_WITH_KV_NAMESPACE_ID"
+
+[vars]
+ALLOWED_EMAIL_DOMAIN = "schoolwith.me"
+SPREADSHEET_ID = "15iVURNoQnZM1nzoUFceD5ALmrcWu4zbd_lhUNO4i6Us"
+FRONTEND_URL = "http://localhost:5173"
+GOOGLE_OAUTH_REDIRECT_URI = "http://localhost:8787/api/auth/callback"
+
+# 以下は `wrangler secret put <NAME>` で設定する(このファイルには書かない):
+#   GOOGLE_SERVICE_ACCOUNT_EMAIL
+#   GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY   (PEM形式、\n はそのまま改行文字として貼り付け)
+#   GOOGLE_OAUTH_CLIENT_ID
+#   GOOGLE_OAUTH_CLIENT_SECRET
+#   SLACK_WEBHOOK_URL

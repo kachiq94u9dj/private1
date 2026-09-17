@@ -1,0 +1,6 @@
+# ローカル開発用シークレット。 `.dev.vars` にコピーして値を入れる(.dev.vars はgit管理外)。
+GOOGLE_SERVICE_ACCOUNT_EMAIL=shift-app@your-project.iam.gserviceaccount.com
+GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nXXXX\n-----END PRIVATE KEY-----\n"
+GOOGLE_OAUTH_CLIENT_ID=xxxxxxxx.apps.googleusercontent.com
+GOOGLE_OAUTH_CLIENT_SECRET=xxxxxxxx
+SLACK_WEBHOOK_URL=https://hooks.slack.com/services/xxx/xxx/xxx
