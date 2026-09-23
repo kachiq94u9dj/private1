@@ -1,8 +1,10 @@
-import { BROWSER_BUNDLE_IDS, type CategoryId } from "./categories";
+import { BROWSER_BUNDLE_IDS, categoryLabel, type CategoryId } from "./categories";
 import type {
   CategoryTotals,
   DayDetail,
   DaySummary,
+  Goal,
+  GoalResult,
   ItemMeta,
   ItemType,
   RankedItem,
@@ -166,4 +168,14 @@ export function averageSummary(summaries: DaySummary[], label: string): DaySumma
   }
   for (const k of Object.keys(byCategory) as CategoryId[]) byCategory[k] = Math.round(byCategory[k]! / n);
   return { date: label, total: Math.round(total / n), byCategory };
+}
+
+export function evaluateGoals(goals: Goal[], total: number, byCategory: Partial<Record<string, number>>): GoalResult[] {
+  return goals.map((g) => {
+    const seconds = g.target.kind === "total" ? total : byCategory[g.target.category] ?? 0;
+    const actualMinutes = Math.round(seconds / 60);
+    const label = g.target.kind === "total" ? "合計" : categoryLabel(g.target.category);
+    const achieved = g.comparator === "max" ? actualMinutes <= g.minutes : actualMinutes >= g.minutes;
+    return { ...g, label, actualMinutes, achieved };
+  });
 }

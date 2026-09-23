@@ -221,3 +221,4 @@ table.items select { border: 1px solid var(--border); background: var(--surface)
 .form-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .form-row select, .form-row input { border: 1px solid var(--border); background: var(--surface); border-radius: 8px; padding: 5px 8px; }
 .form-row input[type="number"] { width: 90px; }
+.notice.demo { border: 1px dashed var(--accent); background: var(--surface); }

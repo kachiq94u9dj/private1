@@ -1,11 +1,10 @@
-import { analyze, averageSummary, type AnalysisRow, type MetaLookup } from "../shared/analysis";
-import { categoryLabel, isCategoryId } from "../shared/categories";
+import { analyze, averageSummary, evaluateGoals, type AnalysisRow, type MetaLookup } from "../shared/analysis";
+import { isCategoryId } from "../shared/categories";
 import { addDays, dateRange } from "../shared/time";
 import type {
   DailyReport,
   DeviceInfo,
   Goal,
-  GoalResult,
   ItemMeta,
   ItemType,
   OverviewResponse,
@@ -103,16 +102,6 @@ export async function loadReport(env: Env, date: string): Promise<DailyReport | 
     error: r.error,
     createdAt: r.created_at,
   };
-}
-
-export function evaluateGoals(goals: Goal[], total: number, byCategory: Partial<Record<string, number>>): GoalResult[] {
-  return goals.map((g) => {
-    const seconds = g.target.kind === "total" ? total : byCategory[g.target.category] ?? 0;
-    const actualMinutes = Math.round(seconds / 60);
-    const label = g.target.kind === "total" ? "合計" : categoryLabel(g.target.category);
-    const achieved = g.comparator === "max" ? actualMinutes <= g.minutes : actualMinutes >= g.minutes;
-    return { ...g, label, actualMinutes, achieved };
-  });
 }
 
 /** ダッシュボード / AI レポート共通の集計 */

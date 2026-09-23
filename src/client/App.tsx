@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { addDays } from "../shared/time";
 import type { OverviewResponse } from "../shared/types";
-import { api } from "./api";
+import { api, IS_DEMO } from "./api";
 import { Dashboard } from "./components/Dashboard";
 import { GoalsPage } from "./components/GoalsPage";
 import { ItemsPage } from "./components/ItemsPage";
@@ -20,7 +20,10 @@ function readUrl() {
 
 export function App() {
   const initial = readUrl();
-  const [date, setDate] = useState<string | null>(initial.date);
+  // デモ版は振り返りが揃っている「昨日」から開く
+  const [date, setDate] = useState<string | null>(
+    initial.date ?? (IS_DEMO ? addDays(new Date().toLocaleDateString("sv-SE"), -1) : null),
+  );
   const [device, setDevice] = useState(initial.device);
   const [tab, setTab] = useState<Tab>(initial.tab);
   const [data, setData] = useState<OverviewResponse | null>(null);
@@ -78,6 +81,12 @@ export function App() {
         </nav>
       </header>
 
+      {IS_DEMO && (
+        <div className="notice demo">
+          <b>デモ版</b>：表示しているのは自動生成したサンプルデータです（実際の利用履歴ではありません）。AI の振り返りも定型文の見本で、Slack には送信しません。
+          日付の移動・端末の切り替え・カテゴリ変更・目標の追加は操作できます（再読み込みで元に戻ります）。
+        </div>
+      )}
       {tab === "dashboard" && (
         <>
           <div className="controls">

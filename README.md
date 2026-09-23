@@ -153,4 +153,6 @@ node scripts/seed-demo.ts            # 別ターミナルで。ダミーデー�
 | `npm run typecheck` | 型チェック |
 | `npm run deploy` | 手元から直接デプロイ（通常は GitHub Actions） |
 
+`npm run build:demo` で、サーバーなしで動くデモ版（サンプルデータ入りの単体 HTML）を `demo/index.html` に出力できます。
+
 Cron の動作は `curl "http://localhost:5173/cdn-cgi/handler/scheduled"` で試せます。

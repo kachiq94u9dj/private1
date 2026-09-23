@@ -8,6 +8,6 @@
     "allowImportingTsExtensions": true,
     "erasableSyntaxOnly": true
   },
-  "include": ["collector", "tests", "src/shared", "vite.config.ts", "vitest.config.ts"],
+  "include": ["collector", "tests", "src/shared", "vite.config.ts", "vite.demo.config.ts", "vitest.config.ts"],
   "exclude": ["tests/worker"]
 }

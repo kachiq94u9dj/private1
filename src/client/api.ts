@@ -1,4 +1,5 @@
 import type { OverviewResponse } from "../shared/types";
+import { demoApi } from "./demoApi";
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, {
@@ -28,7 +29,7 @@ export interface GoalRow {
   minutes: number;
 }
 
-export const api = {
+const httpApi = {
   overview: (date: string | null, device: string) =>
     request<OverviewResponse>(`/api/overview?device=${encodeURIComponent(device)}${date ? `&date=${date}` : ""}`),
   items: () => request<{ items: ItemRow[] }>("/api/items"),
@@ -42,3 +43,7 @@ export const api = {
   regenerate: (date: string, notify: boolean) =>
     request(`/api/reports/${date}/regenerate${notify ? "?notify=1" : ""}`, { method: "POST" }),
 };
+
+/** VITE_DEMO=1 でビルドすると、サーバーなしで動くデモ版になる */
+export const IS_DEMO = import.meta.env.VITE_DEMO === "1";
+export const api: typeof httpApi = IS_DEMO ? (demoApi as unknown as typeof httpApi) : httpApi;
