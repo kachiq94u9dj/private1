@@ -28,19 +28,20 @@ export async function getValues(env: Env, range: string): Promise<string[][]> {
   return data.values ?? [];
 }
 
-/** 末尾に1行追記 */
+/**
+ * 末尾に1行追記。
+ * valueInputOptionは意図的にRAWを使う(USER_ENTEREDだと "=" 等で始まる
+ * ユーザー入力(申請理由・備考など)が数式として解釈される数式インジェクションの
+ * リスクがあるため、常に文字列として書き込む)。
+ */
 export async function appendRow(env: Env, tab: string, row: (string | number | boolean)[]) {
-  await sheetsFetch(
-    env,
-    `/values/${encodeURIComponent(`${tab}!A1`)}:append?valueInputOption=USER_ENTERED`,
-    {
-      method: "POST",
-      body: JSON.stringify({ values: [row] }),
-    }
-  );
+  await sheetsFetch(env, `/values/${encodeURIComponent(`${tab}!A1`)}:append?valueInputOption=RAW`, {
+    method: "POST",
+    body: JSON.stringify({ values: [row] }),
+  });
 }
 
-/** 1行を上書き (rowNumberはシート上の実際の行番号、ヘッダーは1行目) */
+/** 1行を上書き (rowNumberはシート上の実際の行番号、ヘッダーは1行目)。RAWの理由はappendRow参照。 */
 export async function updateRow(
   env: Env,
   tab: string,
@@ -48,7 +49,7 @@ export async function updateRow(
   row: (string | number | boolean)[]
 ) {
   const range = `${tab}!A${rowNumber}`;
-  await sheetsFetch(env, `/values/${encodeURIComponent(range)}?valueInputOption=USER_ENTERED`, {
+  await sheetsFetch(env, `/values/${encodeURIComponent(range)}?valueInputOption=RAW`, {
     method: "PUT",
     body: JSON.stringify({ values: [row] }),
   });

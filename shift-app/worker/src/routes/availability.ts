@@ -3,10 +3,12 @@ import type { Availability, AvailabilitySymbol, Env } from "../types";
 import type { Vars } from "../middleware";
 import { requireAuth } from "../middleware";
 import { appendRow, readTable, updateRow } from "../lib/sheets";
+import { isOneOf, isValidDate, sanitizeFreeText } from "../lib/validate";
 
 export const availabilityRoutes = new Hono<{ Bindings: Env; Variables: Vars }>();
 
 const TAB = "Availability";
+const SYMBOLS = ["batsu", "sankaku", "maru"] as const;
 
 function toAvailability(record: Record<string, string>): Availability {
   return {
@@ -38,9 +40,10 @@ availabilityRoutes.post("/", requireAuth, async (c) => {
   const user = c.get("user");
   const body = await c.req.json<{ date: string; symbol: AvailabilitySymbol; note?: string }>();
 
-  if (!body.date || !body.symbol) {
-    return c.json({ error: "date and symbol are required" }, 400);
+  if (!isValidDate(body.date) || !isOneOf(body.symbol, SYMBOLS)) {
+    return c.json({ error: "date (YYYY-MM-DD) and a valid symbol are required" }, 400);
   }
+  const note = sanitizeFreeText(body.note);
 
   const rows = await readTable(c.env, TAB);
   const existing = rows.find(
@@ -54,13 +57,13 @@ availabilityRoutes.post("/", requireAuth, async (c) => {
       user.memberId,
       body.date,
       body.symbol,
-      body.note ?? "",
+      note,
       now,
     ]);
     return c.json({ id: existing.record.id, updated: true });
   }
 
   const id = crypto.randomUUID();
-  await appendRow(c.env, TAB, [id, user.memberId, body.date, body.symbol, body.note ?? "", now]);
+  await appendRow(c.env, TAB, [id, user.memberId, body.date, body.symbol, note, now]);
   return c.json({ id, updated: false }, 201);
 });

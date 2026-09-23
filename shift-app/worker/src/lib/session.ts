@@ -47,3 +47,24 @@ export function clearSessionCookie(secure: boolean): string {
   if (secure) attrs.push("Secure");
   return attrs.join("; ");
 }
+
+const OAUTH_STATE_TTL_SECONDS = 300; // 5分。ログイン開始→Google側での操作完了までの許容時間
+
+/** OAuthログイン開始時に発行するCSRF対策用stateを一時Cookieに保持する */
+export function oauthStateCookie(state: string, secure: boolean): string {
+  const attrs = [
+    `oauth_state=${state}`,
+    "HttpOnly",
+    "Path=/",
+    "SameSite=Lax",
+    `Max-Age=${OAUTH_STATE_TTL_SECONDS}`,
+  ];
+  if (secure) attrs.push("Secure");
+  return attrs.join("; ");
+}
+
+export function clearOauthStateCookie(secure: boolean): string {
+  const attrs = ["oauth_state=", "HttpOnly", "Path=/", "SameSite=Lax", "Max-Age=0"];
+  if (secure) attrs.push("Secure");
+  return attrs.join("; ");
+}

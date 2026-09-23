@@ -5,11 +5,13 @@ import { requireAdmin, requireAuth } from "../middleware";
 import { appendRow, readTable, updateRow } from "../lib/sheets";
 import { getMembers } from "../lib/members";
 import { sendSlackMessage } from "../lib/slack";
+import { isOneOf, isValidDate, sanitizeFreeText } from "../lib/validate";
 
 export const requestRoutes = new Hono<{ Bindings: Env; Variables: Vars }>();
 
 const TAB = "Requests";
 const SHIFTS_TAB = "Shifts";
+const REQUEST_TYPES = ["change", "swap"] as const;
 
 function toRequest(record: Record<string, string>): ShiftChangeRequest {
   return {
@@ -47,10 +49,26 @@ requestRoutes.post("/", requireAuth, async (c) => {
     reason: string;
   }>();
 
-  if (!body.type || !body.targetShiftId || !body.proposedDate) {
-    return c.json({ error: "type, targetShiftId and proposedDate are required" }, 400);
+  if (
+    !isOneOf(body.type, REQUEST_TYPES) ||
+    !body.targetShiftId ||
+    !isValidDate(body.proposedDate)
+  ) {
+    return c.json(
+      { error: "a valid type, targetShiftId and proposedDate (YYYY-MM-DD) are required" },
+      400
+    );
   }
 
+  // IDOR対策: 自分名義のシフト以外を対象にした変更申請は作成できないようにする
+  // (でないと他メンバーのシフトを勝手に書き換える申請を通せてしまう)。
+  const shiftRows = await readTable(c.env, SHIFTS_TAB);
+  const targetShift = shiftRows.find((r) => r.record.id === body.targetShiftId);
+  if (!targetShift || targetShift.record.member_id !== user.memberId) {
+    return c.json({ error: "targetShiftId must belong to the current user" }, 403);
+  }
+
+  const reason = sanitizeFreeText(body.reason);
   const id = crypto.randomUUID();
   const now = new Date().toISOString();
   await appendRow(c.env, TAB, [
@@ -59,7 +77,7 @@ requestRoutes.post("/", requireAuth, async (c) => {
     user.memberId,
     body.targetShiftId,
     body.proposedDate,
-    body.reason ?? "",
+    reason,
     "pending",
     "",
     now,
@@ -70,7 +88,7 @@ requestRoutes.post("/", requireAuth, async (c) => {
     c.env,
     `:bell: ${user.name} さんから${
       body.type === "swap" ? "交換" : "変更"
-    }申請が届きました。希望日: ${body.proposedDate}\n理由: ${body.reason ?? "(未記入)"}`
+    }申請が届きました。希望日: ${body.proposedDate}\n理由: ${reason || "(未記入)"}`
   );
 
   return c.json({ id }, 201);

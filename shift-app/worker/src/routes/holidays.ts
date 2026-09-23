@@ -3,6 +3,7 @@ import type { Env, Holiday } from "../types";
 import type { Vars } from "../middleware";
 import { requireAdmin, requireAuth } from "../middleware";
 import { appendRow, readTable, updateRow } from "../lib/sheets";
+import { isValidDate, sanitizeFreeText } from "../lib/validate";
 
 export const holidayRoutes = new Hono<{ Bindings: Env; Variables: Vars }>();
 
@@ -18,16 +19,17 @@ holidayRoutes.get("/", requireAuth, async (c) => {
 
 holidayRoutes.post("/", requireAuth, requireAdmin, async (c) => {
   const body = await c.req.json<{ date: string; name: string }>();
-  if (!body.date || !body.name) {
-    return c.json({ error: "date and name are required" }, 400);
+  if (!isValidDate(body.date) || !body.name) {
+    return c.json({ error: "date (YYYY-MM-DD) and name are required" }, 400);
   }
+  const name = sanitizeFreeText(body.name);
 
   const rows = await readTable(c.env, TAB);
   const existing = rows.find((r) => r.record.date === body.date);
   if (existing) {
-    await updateRow(c.env, TAB, existing.rowNumber, [body.date, body.name]);
+    await updateRow(c.env, TAB, existing.rowNumber, [body.date, name]);
   } else {
-    await appendRow(c.env, TAB, [body.date, body.name]);
+    await appendRow(c.env, TAB, [body.date, name]);
   }
   return c.json({ ok: true });
 });

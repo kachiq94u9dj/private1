@@ -6,10 +6,12 @@ import { appendRow, readTable, updateRow } from "../lib/sheets";
 import { getMembers } from "../lib/members";
 import { upsertCalendarEvent } from "../lib/calendar";
 import { sendSlackMessage } from "../lib/slack";
+import { isOneOf, isValidDate } from "../lib/validate";
 
 export const shiftRoutes = new Hono<{ Bindings: Env; Variables: Vars }>();
 
 const TAB = "Shifts";
+const SHIFT_TYPES = ["work", "daikyu"] as const;
 
 function toShift(record: Record<string, string>): Shift {
   return {
@@ -43,8 +45,14 @@ shiftRoutes.post("/confirm", requireAuth, requireAdmin, async (c) => {
     type: ShiftType;
   }>();
 
-  if (!body.date || !body.memberId || !body.type) {
-    return c.json({ error: "date, memberId and type are required" }, 400);
+  if (!isValidDate(body.date) || !isOneOf(body.type, SHIFT_TYPES) || !body.memberId) {
+    return c.json({ error: "date (YYYY-MM-DD), a valid type and memberId are required" }, 400);
+  }
+
+  const members = await getMembers(c.env);
+  const member = members.find((m) => m.id === body.memberId);
+  if (!member) {
+    return c.json({ error: "unknown memberId" }, 400);
   }
 
   const rows = await readTable(c.env, TAB);
@@ -60,9 +68,6 @@ shiftRoutes.post("/confirm", requireAuth, requireAdmin, async (c) => {
   } else {
     await appendRow(c.env, TAB, rowValues);
   }
-
-  const members = await getMembers(c.env);
-  const member = members.find((m) => m.id === body.memberId);
 
   await sendSlackMessage(
     c.env,

@@ -3,7 +3,6 @@ export type MemberRole = "counselor" | "supporter" | "manager" | "sales" | "othe
 export interface Member {
   id: string;
   name: string;
-  email: string;
   role: MemberRole;
   status: "active" | "inactive";
   isAdmin: boolean;

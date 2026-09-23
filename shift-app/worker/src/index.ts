@@ -19,6 +19,14 @@ app.use("*", async (c, next) => {
   return corsMiddleware(c, next);
 });
 
+// 個人情報を含むレスポンスを中間キャッシュ/ブラウザにキャッシュさせない + 基本的なセキュリティヘッダー
+app.use("*", async (c, next) => {
+  await next();
+  c.header("Cache-Control", "no-store");
+  c.header("X-Content-Type-Options", "nosniff");
+  c.header("Referrer-Policy", "no-referrer");
+});
+
 app.get("/", (c) => c.json({ ok: true, service: "shift-app-api" }));
 
 app.route("/api/auth", authRoutes);
@@ -29,8 +37,10 @@ app.route("/api/requests", requestRoutes);
 app.route("/api/holidays", holidayRoutes);
 
 app.onError((err, c) => {
+  // 詳細(Sheets APIの生レスポンス等を含みうる)はサーバーログのみに残し、
+  // クライアントには内部情報を含まない汎用メッセージだけを返す。
   console.error(err);
-  return c.json({ error: "internal_error", message: err.message }, 500);
+  return c.json({ error: "internal_error" }, 500);
 });
 
 export default app;

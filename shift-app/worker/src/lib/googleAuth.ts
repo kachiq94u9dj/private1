@@ -59,7 +59,8 @@ async function signJwt(env: Env, scopes: string[]): Promise<string> {
 }
 
 const SHEETS_SCOPE = "https://www.googleapis.com/auth/spreadsheets";
-const CALENDAR_SCOPE = "https://www.googleapis.com/auth/calendar";
+// 権限は必要最小限に: カレンダー本体の共有設定変更等はできず、予定の作成/更新のみ可能なスコープに絞る
+const CALENDAR_SCOPE = "https://www.googleapis.com/auth/calendar.events";
 
 /**
  * サービスアカウントとしてのアクセストークンを取得(KVに短期キャッシュ)。
