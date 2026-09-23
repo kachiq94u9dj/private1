@@ -1,0 +1,25 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "screen-time-insights",
+  "main": "src/worker/index.ts",
+  "compatibility_date": "2026-09-01",
+  "assets": {
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"]
+  },
+  // 15分ごとに「前日レポートの生成」と「未分類アイテムの AI 分類」をチェックする
+  "triggers": { "crons": ["*/15 * * * *"] },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "screen-time-insights",
+      // GitHub Actions では vars.D1_DATABASE_ID で置き換えられる（README 参照）
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "vars": {
+    "TIMEZONE": "Asia/Tokyo"
+  },
+  "observability": { "enabled": true }
+}
