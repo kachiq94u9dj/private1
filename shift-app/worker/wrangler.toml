@@ -18,4 +18,4 @@ GOOGLE_OAUTH_REDIRECT_URI = "http://localhost:8787/api/auth/callback"
 #   GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY   (PEM形式、\n はそのまま改行文字として貼り付け)
 #   GOOGLE_OAUTH_CLIENT_ID
 #   GOOGLE_OAUTH_CLIENT_SECRET
-#   SLACK_WEBHOOK_URL
+#   SLACK_WEBHOOK_URL (任意。未設定なら通知は行わない)

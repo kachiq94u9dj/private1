@@ -56,9 +56,12 @@ npx wrangler secret put GOOGLE_SERVICE_ACCOUNT_EMAIL
 npx wrangler secret put GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY
 npx wrangler secret put GOOGLE_OAUTH_CLIENT_ID
 npx wrangler secret put GOOGLE_OAUTH_CLIENT_SECRET
-npx wrangler secret put SLACK_WEBHOOK_URL
 npm run deploy
 ```
+
+Slack通知(`SLACK_WEBHOOK_URL`)は現時点では未設定でOKです。未設定の場合、通知はスキップされるだけで
+他の機能(認証・出勤可否入力・シフト確定・申請/承認・カレンダー連携)は問題なく動作します。
+導入したくなったら `npx wrangler secret put SLACK_WEBHOOK_URL` を追加するだけです。
 
 ### 2. フロントエンド
 
