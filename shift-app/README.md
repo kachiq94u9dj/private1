@@ -24,7 +24,18 @@ CSチームの出勤可否入力・シフト確定・変更/交換申請・承�
 - `Requests`: id, type, requester_id, target_shift_id, proposed_date, reason, status, approver_id, created_at, updated_at
 - `Holidays`: date, name
 
-その後、サービスアカウントのメールアドレスをこのスプレッドシートに「編集者」として共有してください。
+↑ 各タブのヘッダー・実データ(Holidays)入りのインポート用シートを作成済みです(Membersはメンバーの個人情報を
+含むため、リンクはチャット側で個別に共有しています)。各シートを開き、シートタブを右クリック→
+「コピー→次のスプレッドシートにコピー」で本体の「CS出勤シフトスケジュール2026」に貼り付けてください。
+
+- shift-app_Members — 既存の「ルール」タブの氏名・メールを移行済み。is_adminは1名のみTRUEにしてあるので、
+  実際のシフト担当(承認権限を持つ人)に合わせて見直してください。
+- [shift-app_Holidays](https://docs.google.com/spreadsheets/d/1xENj1yXS9KbRBZe4rLGlGoBHSuNyyQFco0CO8blRUXI/edit) — 既存Holidaysタブの2026年分。**2026-01-01(元日)は元シートに無かったため補完しています。**
+- [shift-app_Availability](https://docs.google.com/spreadsheets/d/1eP9ojjjq9UHU_lOiym0WECBZkYU9Lsh_UyxJbpP8WPc/edit)(ヘッダーのみ)
+- [shift-app_Shifts](https://docs.google.com/spreadsheets/d/1NWOP4ufhbx03V352O6YWE4OH0_Ckmdwh4FTLo5uolXI/edit)(ヘッダーのみ)
+- [shift-app_Requests](https://docs.google.com/spreadsheets/d/1i8REI95z-pnQ6R_ttz8_FVvCOrdNNFO6MXrwK82HBEo/edit)(ヘッダーのみ)
+
+取り込み後、サービスアカウントのメールアドレスをこのスプレッドシートに「編集者」として共有してください。
 
 ### 1. Worker(API)
 
