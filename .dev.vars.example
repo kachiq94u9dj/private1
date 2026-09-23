@@ -1,0 +1,6 @@
+# ローカル開発用（cp .dev.vars.example .dev.vars）。本番は wrangler secret / GitHub Secrets で設定する。
+DEV_ALLOW_NO_AUTH=true
+INGEST_TOKEN=local-dev-token
+ANTHROPIC_API_KEY=
+SLACK_WEBHOOK_URL=
+APP_URL=http://localhost:5173
