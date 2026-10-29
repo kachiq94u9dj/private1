@@ -77,3 +77,30 @@ Supabaseプロジェクト: `claude-usage-tracker`
 | session_count | セッション数 |
 
 読み取りは匿名キーで誰でも可能（RLSで書き込みは service_role のみに制限）。
+
+---
+
+# Instagram 友達ダッシュボード (`/instagram`)
+
+Instagram の友達（フォロワー・フォロー中）を整理し、イベントごとに招待・参加状況を管理するページです。
+要件は [`docs/instagram-requirements.md`](docs/instagram-requirements.md) を参照してください。
+
+## 使い方
+
+1. `/instagram` を開き、メールアドレス宛のログインリンクでログインする
+2. 「取り込み」タブで、Instagram の「個人情報をダウンロード」（**HTML 形式**）で取得した ZIP を選ぶ
+   - 解析はブラウザ内で行い、Supabase に送るのはユーザー名・フォロー日時・DM の件数と最終日時だけです（DM の本文は送りません）
+   - 再取り込みしても、メモやイベントの記録は残ります
+3. 「友達」タブで検索・絞り込みし、選んだ人をイベントの候補に追加する
+4. 「イベント」タブでステータス（候補 → 招待済み → 返事あり → 参加 / 不参加 → 来場）を管理し、
+   `@ユーザー名` の一括コピーやプロフィールのリンク一覧で DM を送る相手を確認する
+
+## セットアップ時の注意
+
+- テーブル定義: `supabase/migrations/20261029000000_instagram_friends.sql`（`ig_friends` / `ig_events` / `ig_event_attendees`）。
+  RLS により、ログインした本人の行しか読み書きできません（匿名キーでは何も読めません）。
+- Supabase ダッシュボードの Authentication > URL Configuration で、Site URL / Redirect URLs に
+  利用する URL（例: `http://localhost:3000/instagram`、Vercel の URL）を追加してください。
+- 自分のアカウントで一度ログインした後は、Authentication > Sign In / Providers で
+  「Allow new users to sign up」をオフにすると、他人がアカウントを作れなくなります。
+- パーサーのテスト: `npm run test:instagram`

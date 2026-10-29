@@ -1,4 +1,4 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 export interface DailyUsageRow {
   id: string;
@@ -22,4 +22,48 @@ export function createReadOnlyClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? DEFAULT_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? DEFAULT_SUPABASE_ANON_KEY;
   return createClient(url, key, { auth: { persistSession: false } });
+}
+
+export interface IgFriendRow {
+  id: string;
+  username: string;
+  is_follower: boolean;
+  is_following: boolean;
+  followed_me_at: string | null;
+  i_followed_at: string | null;
+  dm_count: number;
+  last_dm_at: string | null;
+  note: string;
+  imported_at: string;
+}
+
+export interface IgEventRow {
+  id: string;
+  title: string;
+  event_date: string | null;
+  location: string;
+  note: string;
+  created_at: string;
+}
+
+export type AttendeeStatus = "candidate" | "invited" | "replied" | "attending" | "declined" | "attended";
+
+export interface IgAttendeeRow {
+  event_id: string;
+  friend_id: string;
+  status: AttendeeStatus;
+  note: string;
+  updated_at: string;
+}
+
+let browserClient: SupabaseClient | null = null;
+
+// Instagramページ用。ログインセッションをブラウザに保持し、RLSで本人の行だけを読み書きする。
+export function getBrowserClient(): SupabaseClient {
+  if (!browserClient) {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? DEFAULT_SUPABASE_URL;
+    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? DEFAULT_SUPABASE_ANON_KEY;
+    browserClient = createClient(url, key, { auth: { persistSession: true, detectSessionInUrl: true } });
+  }
+  return browserClient;
 }
