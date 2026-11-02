@@ -27,6 +27,9 @@ export function createReadOnlyClient() {
 export interface IgFriendRow {
   id: string;
   username: string;
+  display_name: string;
+  met_where: string;
+  last_met_on: string | null;
   is_follower: boolean;
   is_following: boolean;
   followed_me_at: string | null;
@@ -37,21 +40,43 @@ export interface IgFriendRow {
   imported_at: string;
 }
 
+export type TagKind = "community" | "attribute";
+
+export interface IgTagRow {
+  id: string;
+  name: string;
+  kind: TagKind;
+  color: string;
+  created_at: string;
+}
+
+export interface IgFriendTagRow {
+  friend_id: string;
+  tag_id: string;
+}
+
 export interface IgEventRow {
   id: string;
   title: string;
   event_date: string | null;
+  start_time: string | null;
   location: string;
+  fee: number | null;
+  currency: string;
+  capacity: number | null;
   note: string;
   created_at: string;
 }
 
-export type AttendeeStatus = "candidate" | "invited" | "replied" | "attending" | "declined" | "attended";
+export type Reply = "none" | "yes" | "maybe" | "no";
 
 export interface IgAttendeeRow {
   event_id: string;
   friend_id: string;
-  status: AttendeeStatus;
+  invited: boolean;
+  reply: Reply;
+  attended: boolean;
+  paid: boolean;
   note: string;
   updated_at: string;
 }

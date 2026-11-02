@@ -80,26 +80,30 @@ Supabaseプロジェクト: `claude-usage-tracker`
 
 ---
 
-# Instagram 友達ダッシュボード (`/instagram`)
+# ともだちノート (`/instagram`)
 
-Instagram の友達（フォロワー・フォロー中）を整理し、イベントごとに招待・参加状況を管理するページです。
-要件は [`docs/instagram-requirements.md`](docs/instagram-requirements.md) を参照してください。
+Instagram の友達を整理し、イベントごとに「誘った・返事・出席・支払い」を管理するページです。
+要件は [`docs/instagram-requirements.md`](docs/instagram-requirements.md)、デザインは
+[`design/instagram/`](design/instagram/) を参照してください。
 
 ## 使い方
 
 1. `/instagram` を開き、メールアドレス宛のログインリンクでログインする
-2. 「取り込み」タブで、Instagram の「個人情報をダウンロード」（**HTML 形式**）で取得した ZIP を選ぶ
-   - 解析はブラウザ内で行い、Supabase に送るのはユーザー名・フォロー日時・DM の件数と最終日時だけです（DM の本文は送りません）
-   - 再取り込みしても、メモやイベントの記録は残ります
-3. 「友達」タブで検索・絞り込みし、選んだ人をイベントの候補に追加する
-4. 「イベント」タブでステータス（候補 → 招待済み → 返事あり → 参加 / 不参加 → 来場）を管理し、
-   `@ユーザー名` の一括コピーやプロフィールのリンク一覧で DM を送る相手を確認する
+2. 右上の「Instagramから取り込み」で、Instagram の「個人情報をダウンロード」（**HTML 形式**）の ZIP を入れる
+   - 解析はブラウザ内で行い、Supabase に送るのはユーザー名・フォロー日時・DM の件数と最終日時・DM の相手名だけです（DM の本文は送りません）
+   - 再取り込みしても、名前・メモ・タグ・イベントの記録は残ります
+3. **友達一覧**: カードをクリックして名前・出会い・最後に会った日・タグ（コミュニティ／属性）を編集。
+   左のタグで絞り込み、チェックした人を下のバーからイベントの招待リストに追加
+4. **イベント**: 招待リストの各セルをクリックして「誘った／返事／出席／支払い」を切り替え。
+   `@ユーザー名` の一括コピー、プロフィールのリンク一覧、未払いの人へのリマインド文面を用意できます
+   （DM の自動送信は Instagram の規約違反になるため行いません）
 
 ## セットアップ時の注意
 
-- テーブル定義: `supabase/migrations/20261029000000_instagram_friends.sql`（`ig_friends` / `ig_events` / `ig_event_attendees`）。
+- テーブル定義は `supabase/migrations/` の SQL を日付順に適用します
+  （`ig_friends` / `ig_tags` / `ig_friend_tags` / `ig_events` / `ig_event_attendees`）。
   RLS により、ログインした本人の行しか読み書きできません（匿名キーでは何も読めません）。
-- Supabase ダッシュボードの Authentication > URL Configuration で、Site URL / Redirect URLs に
+- Supabase ダッシュボードの Authentication > URL Configuration で、Redirect URLs に
   利用する URL（例: `http://localhost:3000/instagram`、Vercel の URL）を追加してください。
 - 自分のアカウントで一度ログインした後は、Authentication > Sign In / Providers で
   「Allow new users to sign up」をオフにすると、他人がアカウントを作れなくなります。

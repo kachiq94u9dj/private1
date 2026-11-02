@@ -1,83 +1,102 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { getBrowserClient, type IgAttendeeRow, type IgEventRow, type IgFriendRow } from "@/lib/supabase";
-import { Card, ExportBox, StatTile, buttonStyle, formatDate, inputStyle, profileUrl, tdStyle, thStyle } from "./ui";
+import { addAttendees } from "@/lib/instagram/api";
+import {
+  filterFriendViews,
+  formatMonthDay,
+  sortEvents,
+  tagColor,
+  tagCounts,
+  type FriendFilter,
+  type FriendView,
+} from "@/lib/instagram/selectors";
+import type { IgEventRow, IgFriendTagRow, IgTagRow } from "@/lib/supabase";
+import FriendEditModal from "./FriendEditModal";
+import TagModal from "./TagModal";
+import { Avatar, Checkbox, ExportButtons, Icon, PersonName, TagChip, errorMessage } from "./ui";
 
-type Relation = "all" | "mutual" | "follower_only" | "following_only" | "none";
-type SortKey = "username" | "dm_count" | "last_dm_at" | "followed_me_at";
+const PAGE = 60;
 
-const RELATION_LABELS: Record<Relation, string> = {
-  all: "すべて",
-  mutual: "相互フォロー",
-  follower_only: "フォロワーのみ",
-  following_only: "フォロー中のみ",
-  none: "つながりなし",
-};
-
-const PAGE = 200;
-
-function relationOf(f: IgFriendRow): Exclude<Relation, "all"> {
-  if (f.is_follower && f.is_following) return "mutual";
-  if (f.is_follower) return "follower_only";
-  if (f.is_following) return "following_only";
-  return "none";
+function FriendCard({
+  view,
+  selected,
+  onToggle,
+  onOpen,
+}: {
+  view: FriendView;
+  selected: boolean;
+  onToggle: () => void;
+  onOpen: () => void;
+}) {
+  const { friend, communities, attributes } = view;
+  return (
+    <article
+      className="tn-card"
+      data-selected={selected}
+      onClick={onOpen}
+      onKeyDown={(e) => e.key === "Enter" && onOpen()}
+      tabIndex={0}
+    >
+      <div className="tn-card-head">
+        <Avatar friend={friend} color={communities[0]} />
+        <PersonName friend={friend} />
+        <Checkbox checked={selected} onChange={onToggle} label={`@${friend.username} を選択`} />
+      </div>
+      {communities.length + attributes.length > 0 && (
+        <div className="tn-tags">
+          {[...communities, ...attributes].map((t) => (
+            <TagChip key={t.id} tag={t} />
+          ))}
+        </div>
+      )}
+      <dl className="tn-facts">
+        <dt>出会い</dt>
+        <dd>{friend.met_where || "—"}</dd>
+        <dt>最後に会った</dt>
+        <dd>{formatMonthDay(view.lastMet)}</dd>
+        <dt>参加歴</dt>
+        <dd>
+          招待 {view.invitedCount}回・参加 {view.joinedCount}回
+        </dd>
+      </dl>
+      {view.upcomingEvent && <div className="tn-banner">「{view.upcomingEvent.title}」の招待リストに追加済み</div>}
+    </article>
+  );
 }
 
 export default function FriendsView({
-  friends,
+  views,
+  tags,
+  friendTags,
   events,
-  attendees,
   onChanged,
 }: {
-  friends: IgFriendRow[];
+  views: FriendView[];
+  tags: IgTagRow[];
+  friendTags: IgFriendTagRow[];
   events: IgEventRow[];
-  attendees: IgAttendeeRow[];
   onChanged: () => Promise<void>;
 }) {
-  const [query, setQuery] = useState("");
-  const [relation, setRelation] = useState<Relation>("all");
-  const [dmOnly, setDmOnly] = useState(false);
-  const [sortKey, setSortKey] = useState<SortKey>("last_dm_at");
+  const [filter, setFilter] = useState<FriendFilter>({ query: "", communityId: null, attributeIds: [] });
   const [limit, setLimit] = useState(PAGE);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [editing, setEditing] = useState<FriendView | null>(null);
+  const [tagModal, setTagModal] = useState(false);
   const [targetEvent, setTargetEvent] = useState("");
-  const [status, setStatus] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
 
-  const eventCount = useMemo(() => {
-    const map = new Map<string, number>();
-    for (const a of attendees) map.set(a.friend_id, (map.get(a.friend_id) ?? 0) + 1);
-    return map;
-  }, [attendees]);
+  const counts = useMemo(() => tagCounts(friendTags), [friendTags]);
+  const communities = tags.filter((t) => t.kind === "community");
+  const attributes = tags.filter((t) => t.kind === "attribute");
+  const filtered = useMemo(() => filterFriendViews(views, filter), [views, filter]);
+  const selectedViews = views.filter((v) => selected.has(v.friend.id));
+  const sortedEvents = useMemo(() => sortEvents(events), [events]);
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase().replace(/^@/, "");
-    const list = friends.filter((f) => {
-      if (relation !== "all" && relationOf(f) !== relation) return false;
-      if (dmOnly && f.dm_count === 0) return false;
-      if (q && !f.username.includes(q) && !f.note.toLowerCase().includes(q)) return false;
-      return true;
-    });
-    return list.sort((a, b) => {
-      if (sortKey === "username") return a.username.localeCompare(b.username);
-      if (sortKey === "dm_count") return b.dm_count - a.dm_count;
-      return (b[sortKey] ?? "").localeCompare(a[sortKey] ?? "");
-    });
-  }, [friends, query, relation, dmOnly, sortKey]);
-
-  const stats = useMemo(
-    () => ({
-      connected: friends.filter((f) => f.is_follower || f.is_following).length,
-      followers: friends.filter((f) => f.is_follower).length,
-      following: friends.filter((f) => f.is_following).length,
-      mutual: friends.filter((f) => f.is_follower && f.is_following).length,
-      dm: friends.filter((f) => f.dm_count > 0).length,
-    }),
-    [friends],
-  );
-
-  const selectedInView = filtered.filter((f) => selected.has(f.id));
-  const exportTargets = selectedInView.length > 0 ? selectedInView : filtered;
+  function update(patch: Partial<FriendFilter>) {
+    setFilter({ ...filter, ...patch });
+    setLimit(PAGE);
+  }
 
   function toggle(id: string) {
     setSelected((prev) => {
@@ -88,181 +107,160 @@ export default function FriendsView({
     });
   }
 
-  async function saveNote(friend: IgFriendRow, note: string) {
-    if (note === friend.note) return;
-    const { error } = await getBrowserClient().from("ig_friends").update({ note }).eq("id", friend.id);
-    if (error) setStatus(`メモを保存できませんでした: ${error.message}`);
-    else await onChanged();
-  }
-
   async function addToEvent() {
-    if (!targetEvent || selectedInView.length === 0) return;
-    const rows = selectedInView.map((f) => ({ event_id: targetEvent, friend_id: f.id, status: "candidate" }));
-    const { error } = await getBrowserClient()
-      .from("ig_event_attendees")
-      .upsert(rows, { onConflict: "event_id,friend_id", ignoreDuplicates: true });
-    if (error) {
-      setStatus(`イベントに追加できませんでした: ${error.message}`);
-      return;
+    const eventId = targetEvent || sortedEvents[0]?.id;
+    if (!eventId) return;
+    try {
+      await addAttendees(eventId, [...selected]);
+      const title = events.find((e) => e.id === eventId)?.title ?? "";
+      setMessage(`${selected.size}人を「${title}」の招待リストに追加しました`);
+      setSelected(new Set());
+      await onChanged();
+    } catch (e) {
+      setMessage(`追加できませんでした: ${errorMessage(e)}`);
     }
-    const title = events.find((e) => e.id === targetEvent)?.title ?? "";
-    setStatus(`${rows.length}人を「${title}」の候補に追加しました（既に追加済みの人はそのままです）。`);
-    setSelected(new Set());
-    await onChanged();
   }
 
   return (
-    <>
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
-          gap: 12,
-          marginBottom: 16,
-        }}
-      >
-        <StatTile label="友達（合計）" value={stats.connected.toLocaleString()} sub="フォロワーとフォロー中（重複なし）" />
-        <StatTile label="フォロワー" value={stats.followers.toLocaleString()} />
-        <StatTile label="フォロー中" value={stats.following.toLocaleString()} />
-        <StatTile label="相互フォロー" value={stats.mutual.toLocaleString()} />
-        <StatTile label="DM したことがある" value={stats.dm.toLocaleString()} />
-      </div>
-
-      <Card title="友達一覧">
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
-          <input
-            style={{ ...inputStyle, flex: "1 1 200px" }}
-            placeholder="ユーザー名・メモで検索"
-            value={query}
-            onChange={(e) => {
-              setQuery(e.target.value);
-              setLimit(PAGE);
-            }}
-          />
-          <select style={inputStyle} value={relation} onChange={(e) => setRelation(e.target.value as Relation)}>
-            {(Object.keys(RELATION_LABELS) as Relation[]).map((r) => (
-              <option key={r} value={r}>
-                {RELATION_LABELS[r]}
-              </option>
-            ))}
-          </select>
-          <select style={inputStyle} value={sortKey} onChange={(e) => setSortKey(e.target.value as SortKey)}>
-            <option value="last_dm_at">最終 DM が新しい順</option>
-            <option value="dm_count">DM 件数が多い順</option>
-            <option value="followed_me_at">フォローされた日が新しい順</option>
-            <option value="username">ユーザー名順</option>
-          </select>
-          <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}>
-            <input type="checkbox" checked={dmOnly} onChange={(e) => setDmOnly(e.target.checked)} />
-            DM したことがある人だけ
-          </label>
+    <div className="tn-main">
+      <aside>
+        <p className="tn-side-label">コミュニティ・出会った場所</p>
+        <div className="tn-side-list">
+          <button className="tn-side-item" aria-pressed={!filter.communityId} onClick={() => update({ communityId: null })}>
+            すべての友達
+            <span className="tn-side-count">{views.length}</span>
+          </button>
+          {communities.map((t) => (
+            <button
+              key={t.id}
+              className="tn-side-item"
+              aria-pressed={filter.communityId === t.id}
+              onClick={() => update({ communityId: filter.communityId === t.id ? null : t.id })}
+            >
+              <span className="tn-dot" style={{ background: tagColor(t).dot }} />
+              {t.name}
+              <span className="tn-side-count">{counts.get(t.id) ?? 0}</span>
+            </button>
+          ))}
         </div>
 
-        <div
-          style={{
-            display: "flex",
-            gap: 8,
-            alignItems: "center",
-            flexWrap: "wrap",
-            marginBottom: 12,
-            fontSize: 13,
-          }}
-        >
-          <span style={{ color: "var(--text-secondary)" }}>
-            {filtered.length.toLocaleString()}人中 {selectedInView.length}人を選択中
-          </span>
-          <button style={buttonStyle()} onClick={() => setSelected(new Set(filtered.map((f) => f.id)))}>
+        {attributes.length > 0 && (
+          <>
+            <p className="tn-side-label">属性</p>
+            <div className="tn-chip-wrap">
+              {attributes.map((t) => {
+                const on = filter.attributeIds.includes(t.id);
+                return (
+                  <button
+                    key={t.id}
+                    className="tn-filter-chip"
+                    aria-pressed={on}
+                    onClick={() =>
+                      update({
+                        attributeIds: on ? filter.attributeIds.filter((id) => id !== t.id) : [...filter.attributeIds, t.id],
+                      })
+                    }
+                  >
+                    {t.name}
+                    <small>{counts.get(t.id) ?? 0}</small>
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        )}
+
+        <button className="tn-dashed-btn" onClick={() => setTagModal(true)}>
+          ＋ タグを作成
+        </button>
+      </aside>
+
+      <section>
+        <div className="tn-toolbar">
+          <label className="tn-search">
+            {Icon.search}
+            <input
+              placeholder="名前・@ユーザー名・タグで検索"
+              value={filter.query}
+              onChange={(e) => update({ query: e.target.value })}
+            />
+          </label>
+          <span className="tn-muted">{filtered.length.toLocaleString()}人を表示</span>
+          <button className="tn-btn" onClick={() => setSelected(new Set(filtered.map((v) => v.friend.id)))}>
             表示中を全選択
           </button>
-          <button style={buttonStyle()} onClick={() => setSelected(new Set())}>
-            選択解除
-          </button>
-          <span style={{ marginLeft: "auto", display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <select style={inputStyle} value={targetEvent} onChange={(e) => setTargetEvent(e.target.value)}>
-              <option value="">イベントを選択…</option>
-              {events.map((e) => (
-                <option key={e.id} value={e.id}>
-                  {e.title}
-                  {e.event_date ? `（${e.event_date}）` : ""}
-                </option>
-              ))}
-            </select>
-            <button
-              style={buttonStyle(true)}
-              onClick={addToEvent}
-              disabled={!targetEvent || selectedInView.length === 0}
-            >
-              選択した人をイベントに追加
-            </button>
-          </span>
         </div>
-        {events.length === 0 && (
-          <p style={{ fontSize: 12, color: "var(--text-muted)", margin: "0 0 12px" }}>
-            イベントは「イベント」タブで作成できます。
+
+        {message && (
+          <p className="tn-ok" style={{ margin: "0 0 12px" }}>
+            {message}
           </p>
         )}
-        {status && <p style={{ fontSize: 13, color: "var(--text-secondary)", margin: "0 0 12px" }}>{status}</p>}
 
-        <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-            <thead>
-              <tr style={{ borderBottom: "1px solid var(--gridline)" }}>
-                <th style={thStyle} />
-                <th style={thStyle}>ユーザー名</th>
-                <th style={thStyle}>関係</th>
-                <th style={thStyle}>フォローされた日</th>
-                <th style={{ ...thStyle, textAlign: "right" }}>DM 件数</th>
-                <th style={thStyle}>最終 DM</th>
-                <th style={{ ...thStyle, textAlign: "right" }}>イベント</th>
-                <th style={thStyle}>メモ</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.slice(0, limit).map((f) => (
-                <tr key={f.id} style={{ borderBottom: "1px solid var(--gridline)" }}>
-                  <td style={tdStyle}>
-                    <input type="checkbox" checked={selected.has(f.id)} onChange={() => toggle(f.id)} />
-                  </td>
-                  <td style={tdStyle}>
-                    <a href={profileUrl(f.username)} target="_blank" rel="noreferrer" style={{ color: "var(--series-1)" }}>
-                      @{f.username}
-                    </a>
-                  </td>
-                  <td style={{ ...tdStyle, whiteSpace: "nowrap", color: "var(--text-secondary)" }}>
-                    {RELATION_LABELS[relationOf(f)]}
-                  </td>
-                  <td style={tdStyle}>{formatDate(f.followed_me_at)}</td>
-                  <td style={{ ...tdStyle, textAlign: "right" }}>{f.dm_count.toLocaleString()}</td>
-                  <td style={tdStyle}>{formatDate(f.last_dm_at)}</td>
-                  <td style={{ ...tdStyle, textAlign: "right" }}>{eventCount.get(f.id) ?? 0}</td>
-                  <td style={tdStyle}>
-                    <input
-                      key={f.note}
-                      style={{ ...inputStyle, width: "100%", minWidth: 160, padding: "4px 8px" }}
-                      defaultValue={f.note}
-                      placeholder="メモ"
-                      onBlur={(e) => void saveNote(f, e.target.value)}
-                    />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        {views.length === 0 ? (
+          <div className="tn-empty">まだ友達がいません。右上の「Instagramから取り込み」から読み込んでください。</div>
+        ) : filtered.length === 0 ? (
+          <div className="tn-empty">条件に合う友達がいません。</div>
+        ) : (
+          <div className="tn-grid">
+            {filtered.slice(0, limit).map((v) => (
+              <FriendCard
+                key={v.friend.id}
+                view={v}
+                selected={selected.has(v.friend.id)}
+                onToggle={() => toggle(v.friend.id)}
+                onOpen={() => setEditing(v)}
+              />
+            ))}
+          </div>
+        )}
         {filtered.length > limit && (
-          <button style={{ ...buttonStyle(), marginTop: 12 }} onClick={() => setLimit((l) => l + PAGE)}>
-            さらに表示（残り {(filtered.length - limit).toLocaleString()}人）
-          </button>
+          <div style={{ textAlign: "center", marginTop: 20 }}>
+            <button className="tn-btn" onClick={() => setLimit((l) => l + PAGE)}>
+              さらに表示（残り {(filtered.length - limit).toLocaleString()}人）
+            </button>
+          </div>
         )}
-        {friends.length === 0 && (
-          <p style={{ fontSize: 13, color: "var(--text-muted)" }}>まだデータがありません。「取り込み」タブから ZIP を読み込んでください。</p>
-        )}
+      </section>
 
-        <ExportBox
-          usernames={exportTargets.map((f) => f.username)}
-          label={selectedInView.length > 0 ? "選択した人" : "表示中の人"}
+      {selected.size > 0 && (
+        <div className="tn-selbar">
+          <strong style={{ fontSize: 13 }}>{selected.size}人を選択中</strong>
+          {sortedEvents.length > 0 ? (
+            <>
+              <select value={targetEvent || sortedEvents[0].id} onChange={(e) => setTargetEvent(e.target.value)} aria-label="追加先のイベント">
+                {sortedEvents.map((e) => (
+                  <option key={e.id} value={e.id}>
+                    {e.title}
+                  </option>
+                ))}
+              </select>
+              <button className="tn-btn tn-btn-accent" onClick={addToEvent}>
+                招待リストに追加
+              </button>
+            </>
+          ) : (
+            <span style={{ fontSize: 12, opacity: 0.8 }}>イベントを作ると招待リストに追加できます</span>
+          )}
+          <ExportButtons usernames={selectedViews.map((v) => v.friend.username)} label="選択した友達" />
+          <button className="tn-btn" onClick={() => setSelected(new Set())}>
+            選択解除
+          </button>
+        </div>
+      )}
+
+      {editing && (
+        <FriendEditModal
+          view={editing}
+          tags={tags}
+          onClose={() => setEditing(null)}
+          onSaved={async () => {
+            setEditing(null);
+            await onChanged();
+          }}
         />
-      </Card>
-    </>
+      )}
+      {tagModal && <TagModal tags={tags} counts={counts} onClose={() => setTagModal(false)} onChanged={onChanged} />}
+    </div>
   );
 }

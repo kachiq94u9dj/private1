@@ -1,151 +1,212 @@
 "use client";
 
-import { useState, type CSSProperties, type ReactNode } from "react";
-import type { AttendeeStatus } from "@/lib/supabase";
+import { useEffect, useState, type ReactNode } from "react";
+import { avatarLabel, displayName, profileUrl, tagColor } from "@/lib/instagram/selectors";
+import type { IgFriendRow, IgTagRow } from "@/lib/supabase";
 
-export const STATUS_LABELS: Record<AttendeeStatus, string> = {
-  candidate: "候補",
-  invited: "招待済み",
-  replied: "返事あり",
-  attending: "参加",
-  declined: "不参加",
-  attended: "来場",
-};
+// ---- icons ----
 
-export const STATUS_ORDER: AttendeeStatus[] = ["candidate", "invited", "replied", "attending", "declined", "attended"];
-
-export const STATUS_COLORS: Record<AttendeeStatus, string> = {
-  candidate: "var(--text-muted)",
-  invited: "var(--series-1)",
-  replied: "var(--series-4)",
-  attending: "var(--good)",
-  declined: "var(--critical)",
-  attended: "var(--series-3)",
-};
-
-export function profileUrl(username: string): string {
-  return `https://www.instagram.com/${encodeURIComponent(username)}/`;
-}
-
-export function formatDate(iso: string | null): string {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  return `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")}`;
-}
-
-export const inputStyle: CSSProperties = {
-  fontSize: 13,
-  padding: "6px 10px",
-  border: "1px solid var(--border)",
-  borderRadius: 6,
-  background: "var(--surface-1)",
-  color: "var(--text-primary)",
-};
-
-export function buttonStyle(primary = false): CSSProperties {
-  return {
-    fontSize: 13,
-    padding: "6px 12px",
-    borderRadius: 6,
-    cursor: "pointer",
-    border: primary ? "1px solid var(--series-1)" : "1px solid var(--border)",
-    background: primary ? "var(--series-1)" : "var(--surface-1)",
-    color: primary ? "#ffffff" : "var(--text-primary)",
-    fontWeight: primary ? 600 : 400,
-  };
-}
-
-export const thStyle: CSSProperties = {
-  textAlign: "left",
-  padding: "6px 8px",
-  color: "var(--text-secondary)",
-  fontWeight: 500,
-  whiteSpace: "nowrap",
-};
-
-export const tdStyle: CSSProperties = { padding: "6px 8px", verticalAlign: "middle" };
-
-export function Card({ title, children, actions }: { title?: string; children: ReactNode; actions?: ReactNode }) {
+function Svg({ children, size = 18 }: { children: ReactNode; size?: number }) {
   return (
-    <section
-      style={{
-        background: "var(--surface-1)",
-        border: "1px solid var(--border)",
-        borderRadius: 10,
-        padding: 16,
-        marginBottom: 16,
-      }}
-    >
-      {(title || actions) && (
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
-          {title && <h2 style={{ fontSize: 15, fontWeight: 600, margin: 0 }}>{title}</h2>}
-          {actions && <div style={{ marginLeft: "auto", display: "flex", gap: 8, flexWrap: "wrap" }}>{actions}</div>}
-        </div>
-      )}
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
       {children}
-    </section>
+    </svg>
   );
 }
 
-export function StatTile({ label, value, sub }: { label: string; value: string; sub?: string }) {
+export const Icon = {
+  people: (
+    <Svg size={22}>
+      <circle cx="9" cy="8" r="3.5" />
+      <path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5" />
+      <circle cx="17" cy="9" r="2.5" />
+      <path d="M16.5 14.6c2.6.2 4.4 1.9 5 4.9" />
+    </Svg>
+  ),
+  refresh: (
+    <Svg size={16}>
+      <path d="M20 12a8 8 0 1 1-2.3-5.7" />
+      <path d="M20 4v5h-5" />
+    </Svg>
+  ),
+  search: (
+    <Svg>
+      <circle cx="11" cy="11" r="7" />
+      <path d="m20 20-3.5-3.5" />
+    </Svg>
+  ),
+  close: (
+    <Svg>
+      <path d="M6 6l12 12M18 6 6 18" />
+    </Svg>
+  ),
+  check: (
+    <Svg size={16}>
+      <path d="m5 12 5 5 9-10" />
+    </Svg>
+  ),
+};
+
+// ---- small parts ----
+
+export function Avatar({ friend, color, small }: { friend: IgFriendRow; color?: IgTagRow; small?: boolean }) {
+  const c = tagColor(color);
   return (
-    <div
-      style={{
-        background: "var(--surface-1)",
-        border: "1px solid var(--border)",
-        borderRadius: 10,
-        padding: "14px 16px",
-      }}
-    >
-      <div style={{ fontSize: 12, color: "var(--text-secondary)", marginBottom: 6 }}>{label}</div>
-      <div style={{ fontSize: 24, fontWeight: 600 }}>{value}</div>
-      {sub && <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>{sub}</div>}
+    <span className={`tn-avatar${small ? " tn-avatar-sm" : ""}`} style={{ background: c.bg, color: c.fg }}>
+      {avatarLabel(friend)}
+    </span>
+  );
+}
+
+export function PersonName({ friend }: { friend: IgFriendRow }) {
+  return (
+    <div style={{ minWidth: 0 }}>
+      <p className="tn-name">{displayName(friend)}</p>
+      <a className="tn-handle" href={profileUrl(friend.username)} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>
+        @{friend.username}
+      </a>
     </div>
   );
 }
 
-/** 絞り込んだ人の @ユーザー名 の一括コピーと、プロフィールへのリンク一覧。 */
-export function ExportBox({ usernames, label }: { usernames: string[]; label: string }) {
-  const [copied, setCopied] = useState(false);
-  const [showLinks, setShowLinks] = useState(false);
+export function TagChip({ tag }: { tag: IgTagRow }) {
+  if (tag.kind === "attribute") return <span className="tn-tag tn-tag-outline">{tag.name}</span>;
+  const c = tagColor(tag);
+  return (
+    <span className="tn-tag" style={{ background: c.bg, color: c.fg }}>
+      {tag.name}
+    </span>
+  );
+}
 
-  async function copy() {
-    await navigator.clipboard.writeText(usernames.map((u) => `@${u}`).join("\n"));
+export function Checkbox({ checked, onChange, label }: { checked: boolean; onChange: () => void; label: string }) {
+  return (
+    <button
+      type="button"
+      role="checkbox"
+      aria-checked={checked}
+      aria-label={label}
+      className="tn-check"
+      onClick={(e) => {
+        e.stopPropagation();
+        onChange();
+      }}
+    >
+      {checked && Icon.check}
+    </button>
+  );
+}
+
+export function errorMessage(e: unknown): string {
+  return e instanceof Error ? e.message : String(e);
+}
+
+// ---- modal ----
+
+export function Modal({
+  title,
+  onClose,
+  children,
+  footer,
+  wide,
+}: {
+  title: string;
+  onClose: () => void;
+  children: ReactNode;
+  footer?: ReactNode;
+  wide?: boolean;
+}) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  return (
+    <div className="tn-overlay" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+      <div className={`tn-modal${wide ? " tn-modal-wide" : ""}`} role="dialog" aria-modal="true" aria-label={title}>
+        <div className="tn-modal-head">
+          <h2 className="tn-modal-title">{title}</h2>
+          <button className="tn-icon-btn" style={{ marginLeft: "auto" }} onClick={onClose} aria-label="閉じる">
+            {Icon.close}
+          </button>
+        </div>
+        <div className="tn-modal-body">{children}</div>
+        {footer && <div className="tn-modal-foot">{footer}</div>}
+      </div>
+    </div>
+  );
+}
+
+// ---- export (copy usernames / profile links) ----
+
+export function useCopy(): [boolean, (text: string) => Promise<void>] {
+  const [copied, setCopied] = useState(false);
+  async function copy(text: string) {
+    await navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }
+  return [copied, copy];
+}
 
+export function usernamesText(usernames: string[]): string {
+  return usernames.map((u) => `@${u}`).join("\n");
+}
+
+export function LinksModal({
+  title,
+  usernames,
+  onClose,
+  children,
+}: {
+  title: string;
+  usernames: string[];
+  onClose: () => void;
+  children?: ReactNode;
+}) {
+  const [copied, copy] = useCopy();
   return (
-    <div
-      style={{
-        border: "1px dashed var(--baseline)",
-        borderRadius: 8,
-        padding: 12,
-        marginTop: 12,
-      }}
-    >
-      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-        <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>
-          {label}: <strong style={{ color: "var(--text-primary)" }}>{usernames.length}人</strong>
-        </span>
-        <button style={{ ...buttonStyle(), marginLeft: "auto" }} onClick={copy} disabled={usernames.length === 0}>
+    <Modal
+      title={title}
+      onClose={onClose}
+      footer={
+        <button className="tn-btn" onClick={() => copy(usernamesText(usernames))}>
           {copied ? "コピーしました" : "@ユーザー名をコピー"}
         </button>
-        <button style={buttonStyle()} onClick={() => setShowLinks((v) => !v)} disabled={usernames.length === 0}>
-          {showLinks ? "リンクを隠す" : "プロフィールのリンク一覧"}
-        </button>
-      </div>
-      {showLinks && (
-        <ol style={{ margin: "12px 0 0", paddingLeft: 24, fontSize: 13, lineHeight: 1.8, columns: "220px" }}>
-          {usernames.map((u) => (
-            <li key={u}>
-              <a href={profileUrl(u)} target="_blank" rel="noreferrer" style={{ color: "var(--series-1)" }}>
-                @{u}
-              </a>
-            </li>
-          ))}
-        </ol>
-      )}
-    </div>
+      }
+    >
+      {children}
+      <p className="tn-muted" style={{ marginTop: 0 }}>
+        {usernames.length}人。クリックすると Instagram のプロフィールが開きます。
+      </p>
+      <ol className="tn-links">
+        {usernames.map((u) => (
+          <li key={u}>
+            <a href={profileUrl(u)} target="_blank" rel="noreferrer">
+              @{u}
+            </a>
+          </li>
+        ))}
+      </ol>
+    </Modal>
+  );
+}
+
+/** 「@ユーザー名をコピー」「プロフィールのリンク一覧」の2つのボタン。 */
+export function ExportButtons({ usernames, label, small }: { usernames: string[]; label: string; small?: boolean }) {
+  const [copied, copy] = useCopy();
+  const [showLinks, setShowLinks] = useState(false);
+  const cls = `tn-btn${small ? " tn-btn-sm" : ""}`;
+  return (
+    <>
+      <button className={cls} disabled={usernames.length === 0} onClick={() => copy(usernamesText(usernames))}>
+        {copied ? "コピーしました" : "@ユーザー名をコピー"}
+      </button>
+      <button className={cls} disabled={usernames.length === 0} onClick={() => setShowLinks(true)}>
+        プロフィールのリンク一覧
+      </button>
+      {showLinks && <LinksModal title={label} usernames={usernames} onClose={() => setShowLinks(false)} />}
+    </>
   );
 }

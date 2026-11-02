@@ -12,7 +12,7 @@ const following = `<html><body><main>
 <div class="pam _3-95 _2ph- _a6-g uiBoxWhite noborder"><h2 class="_3-95 _2pim _a6-h _a6-i">cafe_tokyo</h2><div class="_a6-p"><div><div><a target="_blank" href="https://www.instagram.com/_u/cafe_tokyo">https://www.instagram.com/_u/cafe_tokyo</a></div><div>Mar 10, 2024 9:00 am</div></div></div></div>
 </main></body></html>`;
 
-const dmTaro = `<html><body><div class="_3b0d"><h1>Taro Yamada</h1><div>Participants: Taro Yamada and Me</div>
+const dmTaro = `<html><head><title>Taro Yamada</title></head><body><div class="_3b0d"><h1>Taro Yamada</h1><div>Participants: Taro Yamada and Me</div>
 <div class="pam _3-95 _2ph- _a6-g uiBoxWhite noborder"><h2>Taro Yamada</h2><div class="_3-95 _a6-p"><div>イベント行きたいです！</div></div><div class="_3-94 _a6-o">Apr 02, 2024 8:15 pm</div></div>
 <div class="pam _3-95 _2ph- _a6-g uiBoxWhite noborder"><h2>Me</h2><div class="_3-95 _a6-p"><div>ありがとう</div></div><div class="_3-94 _a6-o">Apr 01, 2024 7:00 pm</div></div>
 </div></body></html>`;
@@ -43,6 +43,7 @@ assert.equal(taro.followedMeAt, new Date(2024, 0, 5, 10, 22).toISOString());
 assert.equal(taro.iFollowedAt, new Date(2024, 1, 1, 15, 4).toISOString());
 assert.equal(taro.dmCount, 2);
 assert.equal(taro.lastDmAt, new Date(2024, 3, 2, 20, 15).toISOString());
+assert.equal(taro.displayName, "Taro Yamada");
 
 const hanako = result.friends.find((f) => f.username === "hanako_s")!;
 assert.equal(hanako.isFollowing, false);
@@ -51,6 +52,7 @@ assert.equal(hanako.followedMeAt, new Date(2023, 11, 31, 23, 5).toISOString());
 const cafe = result.friends.find((f) => f.username === "cafe_tokyo")!;
 assert.equal(cafe.isFollower, false);
 assert.equal(cafe.dmCount, 0);
+assert.equal(cafe.displayName, null);
 
 assert.equal(result.dmThreads, 3);
 assert.equal(result.dmThreadsMatched, 1);

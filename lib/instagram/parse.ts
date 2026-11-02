@@ -15,6 +15,8 @@ export interface ParsedFriend {
   iFollowedAt: string | null;
   dmCount: number;
   lastDmAt: string | null;
+  /** 1対1 DM のスレッド名（相手の表示名）。DMが無ければ null。 */
+  displayName: string | null;
 }
 
 export interface ParseResult {
@@ -126,12 +128,19 @@ function participantCount(html: string): number | null {
   return m[1].split(/,|、/).map((s) => s.trim()).filter(Boolean).length;
 }
 
+/** スレッドHTMLの <title>（1対1なら相手の表示名）。 */
+function threadTitle(html: string): string | null {
+  const m = html.match(/<title>([^<]*)<\/title>/i);
+  const title = m ? stripTags(m[1]).trim() : "";
+  return title && !/^(instagram|messages?|メッセージ)$/i.test(title) ? title : null;
+}
+
 export function parseExport(files: ExportFile[]): ParseResult {
   const friends = new Map<string, ParsedFriend>();
   const get = (username: string): ParsedFriend => {
     let f = friends.get(username);
     if (!f) {
-      f = { username, isFollower: false, isFollowing: false, followedMeAt: null, iFollowedAt: null, dmCount: 0, lastDmAt: null };
+      f = { username, isFollower: false, isFollowing: false, followedMeAt: null, iFollowedAt: null, dmCount: 0, lastDmAt: null, displayName: null };
       friends.set(username, f);
     }
     return f;
@@ -139,7 +148,7 @@ export function parseExport(files: ExportFile[]): ParseResult {
 
   let followerFiles = 0;
   let followingFiles = 0;
-  const threads = new Map<string, { count: number; last: string | null; participants: number | null }>();
+  const threads = new Map<string, { count: number; last: string | null; participants: number | null; title: string | null }>();
 
   for (const file of files) {
     if (isFollowersFile(file.path)) {
@@ -161,10 +170,11 @@ export function parseExport(files: ExportFile[]): ParseResult {
       if (!folder) continue;
       const text = stripTags(file.html);
       const dates = extractDates(text);
-      const t = threads.get(folder) ?? { count: 0, last: null, participants: null };
+      const t = threads.get(folder) ?? { count: 0, last: null, participants: null, title: null };
       t.count += dates.length;
       for (const d of dates) if (!t.last || d > t.last) t.last = d;
       t.participants = t.participants ?? participantCount(file.html);
+      t.title = t.title ?? threadTitle(file.html);
       threads.set(folder, t);
     }
   }
@@ -193,6 +203,7 @@ export function parseExport(files: ExportFile[]): ParseResult {
     const f = get(username);
     f.dmCount += t.count;
     if (t.last && (!f.lastDmAt || t.last > f.lastDmAt)) f.lastDmAt = t.last;
+    f.displayName = f.displayName ?? t.title;
     dmThreadsMatched++;
   }
 
