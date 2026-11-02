@@ -108,3 +108,4 @@ Instagram の友達を整理し、イベントごとに「誘った・返事・�
 - 自分のアカウントで一度ログインした後は、Authentication > Sign In / Providers で
   「Allow new users to sign up」をオフにすると、他人がアカウントを作れなくなります。
 - パーサーのテスト: `npm run test:instagram`
+- 手元の ZIP が読めるかの確認（中身は送信せず、件数だけ表示）: `npm run check:instagram -- <ZIPのパス>`

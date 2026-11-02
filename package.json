@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "collect": "tsx scripts/collect-usage.ts",
-    "test:instagram": "tsx scripts/test-instagram-parse.ts"
+    "test:instagram": "tsx scripts/test-instagram-parse.ts",
+    "check:instagram": "tsx scripts/check-instagram-export.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",
