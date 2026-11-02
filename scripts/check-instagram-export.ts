@@ -1,19 +1,23 @@
 // Instagram のエクスポート ZIP を手元で解析し、取り込める内容かを確認する。
-// 使い方: npm run check:instagram -- ~/Downloads/instagram-xxxx.zip
+// 使い方: npm run check:instagram -- ~/Downloads/instagram-xxxx-1.zip ~/Downloads/instagram-xxxx-2.zip
+// （ZIP が複数に分かれている場合はすべて並べる）
 // ZIP の中身はどこにも送信しない。ユーザー名や DM 本文は表示せず、件数と日付の読み取り状況だけを出す。
 import { readFile } from "node:fs/promises";
 import JSZip from "jszip";
 import { extractDates, isRelevantPath, parseExport } from "../lib/instagram/parse";
 
 async function main() {
-  const path = process.argv[2];
-  if (!path) {
-    console.error("使い方: npm run check:instagram -- <ZIPファイルのパス>");
+  const paths = process.argv.slice(2);
+  if (paths.length === 0) {
+    console.error("使い方: npm run check:instagram -- <ZIPファイルのパス> [<2つ目のZIP> ...]");
     process.exit(1);
   }
 
-  const zip = await JSZip.loadAsync(await readFile(path));
-  const all = Object.values(zip.files).filter((f) => !f.dir);
+  const all: JSZip.JSZipObject[] = [];
+  for (const path of paths) {
+    const zip = await JSZip.loadAsync(await readFile(path));
+    all.push(...Object.values(zip.files).filter((f) => !f.dir));
+  }
   const relevant = all.filter((f) => isRelevantPath(f.name));
   const files = await Promise.all(relevant.map(async (f) => ({ path: f.name, html: await f.async("string") })));
   const result = parseExport(files);
@@ -28,7 +32,7 @@ async function main() {
   const pct = (n: number, d: number) => (d === 0 ? "-" : `${Math.round((n / d) * 100)}%`);
 
   console.log("=== ZIP の中身 ===");
-  console.log(`ファイル数: ${all.length}（HTML ${htmlCount} / JSON ${jsonCount}）`);
+  console.log(`ZIP: ${paths.length}個 / ファイル数: ${all.length}（HTML ${htmlCount} / JSON ${jsonCount}）`);
   if (jsonCount > htmlCount) console.log("※ JSON 形式のようです。HTML 形式でダウンロードし直してください。");
   console.log(`フォロワー/フォロー中のファイル: ${connectionFiles.length > 0 ? connectionFiles.join(", ") : "見つかりません"}`);
 

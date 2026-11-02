@@ -25,19 +25,24 @@ export default function ImportModal({
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  async function handleFile(file: File) {
+  // 大きなアカウントのエクスポートは複数の ZIP に分かれるので、まとめて受け取って1つとして解析する。
+  async function handleFiles(zips: File[]) {
+    if (zips.length === 0) return;
     setParsing(true);
     setResult(null);
     setMessage(null);
     setError(null);
     try {
-      const zip = await JSZip.loadAsync(file);
-      const entries = Object.values(zip.files).filter((f) => !f.dir && isRelevantPath(f.name));
-      const files = await Promise.all(entries.map(async (f) => ({ path: f.name, html: await f.async("string") })));
+      const files: { path: string; html: string }[] = [];
+      for (const zipFile of zips) {
+        const zip = await JSZip.loadAsync(zipFile);
+        const entries = Object.values(zip.files).filter((f) => !f.dir && isRelevantPath(f.name));
+        files.push(...(await Promise.all(entries.map(async (f) => ({ path: f.name, html: await f.async("string") })))));
+      }
       const parsed = parseExport(files);
       if (parsed.followerFiles === 0 && parsed.followingFiles === 0) {
         setError(
-          "フォロワー/フォロー中のファイルが見つかりませんでした。HTML 形式で「フォロワーとフォロー中」を含めてダウンロードした ZIP か確認してください。",
+          "フォロワー/フォロー中のファイルが見つかりませんでした。ZIP が複数ある場合はすべて一緒に入れてください。それでも出る場合は、HTML 形式で「フォロワーとフォロー中」を含めてダウンロードした ZIP か確認してください。",
         );
       } else {
         setResult(parsed);
@@ -95,7 +100,7 @@ export default function ImportModal({
         <li>
           形式は <strong>HTML</strong> を選び、「フォロワーとフォロー中」と「メッセージ」を含めてダウンロード
         </li>
-        <li>届いた ZIP をここに入れる（解析はこのブラウザ内で行い、DM の本文は送信しません）</li>
+        <li>届いた ZIP をここに入れる。複数に分かれていたら全部まとめて（解析はこのブラウザ内で行い、DM の本文は送信しません）</li>
       </ol>
 
       {!result && (
@@ -110,25 +115,24 @@ export default function ImportModal({
           onDrop={(e) => {
             e.preventDefault();
             setOver(false);
-            const file = e.dataTransfer.files[0];
-            if (file) void handleFile(file);
+            void handleFiles([...e.dataTransfer.files]);
           }}
         >
           <input
             type="file"
             accept=".zip,application/zip"
+            multiple
             hidden
             disabled={parsing || saving}
             onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) void handleFile(file);
+              void handleFiles([...(e.target.files ?? [])]);
               e.target.value = "";
             }}
           />
           <strong style={{ display: "block", color: "var(--tn-text)", marginBottom: 4 }}>
             {parsing ? "解析中…" : "ZIP ファイルをドラッグ、またはクリックして選択"}
           </strong>
-          <span style={{ fontSize: 12 }}>instagram-ユーザー名-日付.zip のようなファイルです</span>
+          <span style={{ fontSize: 12 }}>instagram-ユーザー名-日付-….zip が複数ある場合は、すべて一緒に選んでください</span>
         </label>
       )}
 
