@@ -1,16 +1,14 @@
 // ブラウザで選ばれた ZIP・フォルダから、解析に必要な HTML だけを読み出す。
 // 写真や動画など関係のないファイルは開かない（エクスポートは数 GB になることがある）。
-import JSZip from "jszip";
 import { isRelevantPath, type ExportFile } from "./parse";
+import { readExportZip } from "./zip";
 
 function isZip(file: File): boolean {
   return /\.zip$/i.test(file.name) || file.type === "application/zip";
 }
 
 async function fromZip(file: File): Promise<ExportFile[]> {
-  const zip = await JSZip.loadAsync(file);
-  const entries = Object.values(zip.files).filter((f) => !f.dir && isRelevantPath(f.name));
-  return Promise.all(entries.map(async (f) => ({ path: f.name, html: await f.async("string") })));
+  return (await readExportZip(file)).files;
 }
 
 /** <input type="file"> で選ばれたファイル（ZIP、またはフォルダ選択の中身）。 */

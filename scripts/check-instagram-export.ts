@@ -2,10 +2,11 @@
 // 使い方: npm run check:instagram -- ~/Downloads/instagram-xxxx（展開したフォルダ）
 //         npm run check:instagram -- ~/Downloads/instagram-xxxx-1.zip ~/Downloads/instagram-xxxx-2.zip
 // ZIP の中身はどこにも送信しない。ユーザー名や DM 本文は表示せず、件数と日付の読み取り状況だけを出す。
+import { openAsBlob } from "node:fs";
 import { readFile, readdir, stat } from "node:fs/promises";
 import { join, relative } from "node:path";
-import JSZip from "jszip";
-import { extractDates, isRelevantPath, parseExport } from "../lib/instagram/parse";
+import { extractDates, isRelevantPath, parseExport, type ExportFile } from "../lib/instagram/parse";
+import { readExportZip } from "../lib/instagram/zip";
 
 async function main() {
   const paths = process.argv.slice(2);
@@ -14,25 +15,30 @@ async function main() {
     process.exit(1);
   }
 
-  // ZIP の中身と展開済みフォルダの中身を、同じ「パスの一覧」として扱う
-  const all: { name: string; read: () => Promise<string> }[] = [];
+  // ZIP の中身と展開済みフォルダの中身を、同じ「パスの一覧」として扱う。
+  // ZIP は数 GB になることがあるので、丸ごと読み込まず必要な HTML だけ取り出す。
+  const all: { name: string }[] = [];
+  const files: ExportFile[] = [];
   for (const path of paths) {
     if ((await stat(path)).isDirectory()) {
       const walk = async (dir: string): Promise<void> => {
         for (const entry of await readdir(dir, { withFileTypes: true })) {
           const full = join(dir, entry.name);
           if (entry.isDirectory()) await walk(full);
-          else all.push({ name: relative(path, full), read: () => readFile(full, "utf-8") });
+          else {
+            const name = relative(path, full);
+            all.push({ name });
+            if (isRelevantPath(name)) files.push({ path: name, html: await readFile(full, "utf-8") });
+          }
         }
       };
       await walk(path);
     } else {
-      const zip = await JSZip.loadAsync(await readFile(path));
-      for (const f of Object.values(zip.files)) if (!f.dir) all.push({ name: f.name, read: () => f.async("string") });
+      const zip = await readExportZip(await openAsBlob(path));
+      all.push(...zip.names.map((name) => ({ name })));
+      files.push(...zip.files);
     }
   }
-  const relevant = all.filter((f) => isRelevantPath(f.name));
-  const files = await Promise.all(relevant.map(async (f) => ({ path: f.name, html: await f.read() })));
   const result = parseExport(files);
 
   const htmlCount = all.filter((f) => f.name.endsWith(".html")).length;
