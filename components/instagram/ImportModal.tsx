@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import JSZip from "jszip";
 import { saveImport } from "@/lib/instagram/api";
-import { isRelevantPath, parseExport, type ParseResult } from "@/lib/instagram/parse";
+import { collectFromDrop, collectFromFiles } from "@/lib/instagram/collect";
+import { parseExport, type ExportFile, type ParseResult } from "@/lib/instagram/parse";
 import type { IgFriendRow } from "@/lib/supabase";
 import { Modal, errorMessage } from "./ui";
 
@@ -27,30 +27,23 @@ export default function ImportModal({
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // 大きなアカウントのエクスポートは複数の ZIP に分かれるので、まとめて受け取って1つとして解析する。
-  async function handleFiles(zips: File[]) {
-    if (zips.length === 0) return;
+  // ZIP（複数に分かれていてもよい）でも、展開したフォルダでも受け付けて、1つのエクスポートとして解析する。
+  async function handle(collect: () => Promise<ExportFile[]>) {
     setParsing(true);
     setResult(null);
     setMessage(null);
     setError(null);
     try {
-      const files: { path: string; html: string }[] = [];
-      for (const zipFile of zips) {
-        const zip = await JSZip.loadAsync(zipFile);
-        const entries = Object.values(zip.files).filter((f) => !f.dir && isRelevantPath(f.name));
-        files.push(...(await Promise.all(entries.map(async (f) => ({ path: f.name, html: await f.async("string") })))));
-      }
-      const parsed = parseExport(files);
+      const parsed = parseExport(await collect());
       if (parsed.followerFiles === 0 && parsed.followingFiles === 0) {
         setError(
-          "フォロワー/フォロー中のファイルが見つかりませんでした。ZIP が複数ある場合はすべて一緒に入れてください。それでも出る場合は、HTML 形式で「フォロワーとフォロー中」を含めてダウンロードした ZIP か確認してください。",
+          "フォロワー/フォロー中のファイルが見つかりませんでした。展開したフォルダなら、いちばん上の instagram-… フォルダごと入れてください。ZIP が複数ある場合はすべて一緒に入れてください。",
         );
       } else {
         setResult(parsed);
       }
     } catch (e) {
-      setError(`ZIP を読み込めませんでした: ${errorMessage(e)}`);
+      setError(`読み込めませんでした: ${errorMessage(e)}`);
     } finally {
       setParsing(false);
     }
@@ -107,40 +100,63 @@ export default function ImportModal({
         <li>
           形式は <strong>HTML</strong> を選び、「フォロワーとフォロー中」と「メッセージ」を含めてダウンロード
         </li>
-        <li>届いた ZIP をここに入れる。複数に分かれていたら全部まとめて（解析はこのブラウザ内で行い、DM の本文は送信しません）</li>
+        <li>届いた ZIP、または展開したフォルダをここに入れる（解析はこのブラウザ内で行い、DM の本文は送信しません）</li>
       </ol>
 
       {!result && (
-        <label
-          className="tn-dropzone"
-          data-over={over}
-          onDragOver={(e) => {
-            e.preventDefault();
-            setOver(true);
-          }}
-          onDragLeave={() => setOver(false)}
-          onDrop={(e) => {
-            e.preventDefault();
-            setOver(false);
-            void handleFiles([...e.dataTransfer.files]);
-          }}
-        >
-          <input
-            type="file"
-            accept=".zip,application/zip"
-            multiple
-            hidden
-            disabled={parsing || saving}
-            onChange={(e) => {
-              void handleFiles([...(e.target.files ?? [])]);
-              e.target.value = "";
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <div
+            className="tn-dropzone"
+            data-over={over}
+            onDragOver={(e) => {
+              e.preventDefault();
+              setOver(true);
             }}
-          />
-          <strong style={{ display: "block", color: "var(--tn-text)", marginBottom: 4 }}>
-            {parsing ? "解析中…" : "ZIP ファイルをドラッグ、またはクリックして選択"}
-          </strong>
-          <span style={{ fontSize: 12 }}>instagram-ユーザー名-日付-….zip が複数ある場合は、すべて一緒に選んでください</span>
-        </label>
+            onDragLeave={() => setOver(false)}
+            onDrop={(e) => {
+              e.preventDefault();
+              setOver(false);
+              const data = e.dataTransfer;
+              void handle(() => collectFromDrop(data));
+            }}
+          >
+            <strong style={{ display: "block", color: "var(--tn-text)", marginBottom: 4 }}>
+              {parsing ? "読み込み中…" : "フォルダか ZIP をここにドラッグ"}
+            </strong>
+            <span style={{ fontSize: 12 }}>展開した instagram-… フォルダをそのまま入れられます</span>
+          </div>
+          <div className="tn-chips">
+            <label className="tn-btn tn-btn-sm" aria-disabled={parsing || saving}>
+              フォルダを選ぶ
+              <input
+                type="file"
+                hidden
+                disabled={parsing || saving}
+                {...{ webkitdirectory: "", directory: "" }}
+                onChange={(e) => {
+                  const files = [...(e.target.files ?? [])];
+                  e.target.value = "";
+                  if (files.length > 0) void handle(() => collectFromFiles(files));
+                }}
+              />
+            </label>
+            <label className="tn-btn tn-btn-sm" aria-disabled={parsing || saving}>
+              ZIP を選ぶ
+              <input
+                type="file"
+                accept=".zip,application/zip"
+                multiple
+                hidden
+                disabled={parsing || saving}
+                onChange={(e) => {
+                  const files = [...(e.target.files ?? [])];
+                  e.target.value = "";
+                  if (files.length > 0) void handle(() => collectFromFiles(files));
+                }}
+              />
+            </label>
+          </div>
+        </div>
       )}
 
       {error && <p className="tn-error">{error}</p>}
