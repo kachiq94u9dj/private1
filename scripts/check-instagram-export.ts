@@ -49,6 +49,24 @@ async function main() {
   if (jsonCount > htmlCount) console.log("※ JSON 形式のようです。HTML 形式でダウンロードし直してください。");
   console.log(`フォロワー/フォロー中のファイル: ${connectionFiles.length > 0 ? connectionFiles.join(", ") : "見つかりません"}`);
 
+  // 読めないときの手がかり: 拡張子ごとの件数と、上から2階層ぶんのフォルダ構成（ファイル名・中身は出さない）
+  if (connectionFiles.length === 0) {
+    const byExt = new Map<string, number>();
+    const dirs = new Map<string, number>();
+    for (const f of all) {
+      const ext = (f.name.match(/\.([a-z0-9]+)$/i)?.[1] ?? "(なし)").toLowerCase();
+      byExt.set(ext, (byExt.get(ext) ?? 0) + 1);
+      const parts = f.name.split(/[\\/]/).slice(0, -1);
+      const dir = parts.slice(0, 2).join("/") || "(いちばん上)";
+      dirs.set(dir, (dirs.get(dir) ?? 0) + 1);
+    }
+    const top = (m: Map<string, number>, n: number) =>
+      [...m].sort((a, b) => b[1] - a[1]).slice(0, n).map(([k, v]) => `${k}: ${v}`).join(", ");
+    console.log(`ファイルの種類: ${top(byExt, 8)}`);
+    console.log(`フォルダ構成: ${top(dirs, 12)}`);
+    console.log("※ 写真や動画しか入っていない場合は、分割された ZIP の一部です。ほかの ZIP（または展開したフォルダ）も一緒に指定してください。");
+  }
+
   console.log("\n=== 解析結果 ===");
   console.log(`友達（合計）: ${friends.length}`);
   console.log(`フォロワー: ${followers.length}（日付を読めた割合 ${pct(followers.filter((f) => f.followedMeAt).length, followers.length)}）`);
