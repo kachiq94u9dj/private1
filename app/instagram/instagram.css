@@ -358,6 +358,48 @@
   letter-spacing: 0.06em;
 }
 
+.tn-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.tn-label-action {
+  min-height: 28px;
+  font-size: 13px;
+  text-decoration: underline;
+}
+
+.tn-side-item-edit {
+  cursor: default;
+  background: var(--tn-surface);
+  border: 1px dashed var(--tn-border);
+}
+
+.tn-tag-delete {
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #b3261e;
+  display: grid;
+  place-items: center;
+}
+
+.tn-tag-delete:hover {
+  background: #fbe9e7;
+}
+
+.tn-chip-delete {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-style: dashed;
+  color: #b3261e;
+}
+
 .tn-side-list {
   display: flex;
   flex-direction: column;
@@ -508,6 +550,9 @@
   gap: 12px;
   border: 2px solid var(--tn-surface);
   cursor: pointer;
+  /* 全員を一度に表示するので、画面外のカードは描画を後回しにする */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 230px;
 }
 
 .tn-card[data-selected="true"] {
@@ -1439,6 +1484,7 @@ textarea.tn-input {
   }
 
   .tn-card {
+    contain-intrinsic-size: auto 140px;
     flex-direction: row;
     align-items: flex-start;
     padding: 12px;

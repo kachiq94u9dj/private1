@@ -14,9 +14,8 @@ import {
 import type { IgEventRow, IgFriendTagRow, IgTagRow } from "@/lib/supabase";
 import FriendEditModal from "./FriendEditModal";
 import TagModal from "./TagModal";
-import { Avatar, CommunityChip, Icon, PersonName, SelectBox, TagChip } from "./ui";
-
-const PAGE = 60;
+import { deleteTag } from "@/lib/instagram/api";
+import { Avatar, CommunityChip, Icon, PersonName, SelectBox, TagChip, errorMessage } from "./ui";
 
 function FriendCard({
   view,
@@ -109,10 +108,11 @@ export default function FriendsView({
   onImport: () => void;
   onChanged: () => Promise<void>;
 }) {
-  const [limit, setLimit] = useState(PAGE);
   const [editing, setEditing] = useState<FriendView | null>(null);
   const [tagModal, setTagModal] = useState(false);
+  const [editTags, setEditTags] = useState(false);
   const [adding, setAdding] = useState(false);
+  const [tagError, setTagError] = useState<string | null>(null);
 
   const counts = useMemo(() => tagCounts(friendTags), [friendTags]);
   const communities = tags.filter((t) => t.kind === "community");
@@ -121,7 +121,21 @@ export default function FriendsView({
 
   function update(patch: Partial<FriendFilter>) {
     onFilter({ ...filter, ...patch });
-    setLimit(PAGE);
+  }
+
+  async function removeTag(t: IgTagRow) {
+    const n = counts.get(t.id) ?? 0;
+    if (!window.confirm(`タグ「${t.name}」を削除しますか?${n > 0 ? `${n}人の友達からも外れます。` : ""}`)) return;
+    try {
+      await deleteTag(t.id);
+      setTagError(null);
+      if (filter.communityId === t.id || filter.attributeId === t.id) {
+        onFilter({ ...filter, communityId: filter.communityId === t.id ? null : filter.communityId, attributeId: filter.attributeId === t.id ? null : filter.attributeId });
+      }
+      await onChanged();
+    } catch (e) {
+      setTagError(`削除できませんでした: ${errorMessage(e)}`);
+    }
   }
 
   function toggle(id: string) {
@@ -198,6 +212,9 @@ export default function FriendsView({
               {t.name}
             </CommunityChip>
           ))}
+          <button type="button" className="tn-chip tn-chip-light" onClick={() => setTagModal(true)}>
+            タグを管理
+          </button>
         </div>
         {attributes.length > 0 && (
           <div className="tn-scroll-row">
@@ -212,9 +229,6 @@ export default function FriendsView({
                 {t.name}
               </button>
             ))}
-            <button type="button" className="tn-chip tn-chip-light" onClick={() => setTagModal(true)}>
-              ＋ タグ
-            </button>
           </div>
         )}
       </header>
@@ -222,7 +236,15 @@ export default function FriendsView({
       <div className="tn-split">
         <aside>
           <section style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <h2 className="tn-label">コミュニティ・出会った場所</h2>
+            <div className="tn-label-row">
+              <h2 className="tn-label">コミュニティ・出会った場所</h2>
+              {tags.length > 0 && (
+                <button type="button" className="tn-btn-link tn-label-action" onClick={() => setEditTags((v) => !v)}>
+                  {editTags ? "完了" : "編集"}
+                </button>
+              )}
+            </div>
+            {tagError && <p className="tn-error">{tagError}</p>}
             <div className="tn-side-list">
               <button type="button" className="tn-side-item tn-side-item-all" aria-pressed={!filter.communityId} onClick={clearFilter}>
                 <span>すべての友達</span>
@@ -231,6 +253,19 @@ export default function FriendsView({
               {communities.map((t) => {
                 const active = filter.communityId === t.id;
                 const c = tagColor(t);
+                if (editTags) {
+                  return (
+                    <div key={t.id} className="tn-side-item tn-side-item-edit">
+                      <span>
+                        <span className="tn-dot" style={{ background: c.fg }} />
+                        {t.name}
+                      </span>
+                      <button type="button" className="tn-tag-delete" aria-label={`タグ「${t.name}」を削除`} onClick={() => void removeTag(t)}>
+                        {Icon.close}
+                      </button>
+                    </div>
+                  );
+                }
                 return (
                   <button
                     key={t.id}
@@ -255,18 +290,31 @@ export default function FriendsView({
             <section style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               <h2 className="tn-label">属性</h2>
               <div className="tn-chips" style={{ gap: 6 }}>
-                {attributes.map((t) => (
-                  <button
-                    key={t.id}
-                    type="button"
-                    className="tn-chip tn-chip-light"
-                    aria-pressed={filter.attributeId === t.id}
-                    onClick={() => pickAttribute(t.id)}
-                  >
-                    {t.name}
-                    <small>{counts.get(t.id) ?? 0}</small>
-                  </button>
-                ))}
+                {attributes.map((t) =>
+                  editTags ? (
+                    <button
+                      key={t.id}
+                      type="button"
+                      className="tn-chip tn-chip-light tn-chip-delete"
+                      aria-label={`タグ「${t.name}」を削除`}
+                      onClick={() => void removeTag(t)}
+                    >
+                      {t.name}
+                      {Icon.close}
+                    </button>
+                  ) : (
+                    <button
+                      key={t.id}
+                      type="button"
+                      className="tn-chip tn-chip-light"
+                      aria-pressed={filter.attributeId === t.id}
+                      onClick={() => pickAttribute(t.id)}
+                    >
+                      {t.name}
+                      <small>{counts.get(t.id) ?? 0}</small>
+                    </button>
+                  ),
+                )}
               </div>
             </section>
           )}
@@ -328,7 +376,7 @@ export default function FriendsView({
             <div className="tn-empty">条件に合う友達がいません。検索語やタグを変えてみてください。</div>
           ) : (
             <div className="tn-grid">
-              {filtered.slice(0, limit).map((v) => (
+              {filtered.map((v) => (
                 <FriendCard
                   key={v.friend.id}
                   view={v}
@@ -338,13 +386,6 @@ export default function FriendsView({
                   onOpen={() => setEditing(v)}
                 />
               ))}
-            </div>
-          )}
-          {filtered.length > limit && (
-            <div style={{ textAlign: "center" }}>
-              <button type="button" className="tn-btn" onClick={() => setLimit((l) => l + PAGE)}>
-                さらに表示（残り {(filtered.length - limit).toLocaleString()}人）
-              </button>
             </div>
           )}
           {selected.size > 0 && <div className="tn-sp" style={{ height: 150 }} aria-hidden />}
