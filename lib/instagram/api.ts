@@ -6,6 +6,7 @@ import {
   type IgFriendRow,
   type IgFriendTagRow,
   type IgTagRow,
+  type PayMethod,
   type TagKind,
 } from "@/lib/supabase";
 import type { ParseResult } from "./parse";
@@ -137,8 +138,10 @@ export interface EventDraft {
   start_time: string;
   location: string;
   fee: string;
-  currency: string;
   capacity: string;
+  pay_method: PayMethod;
+  /** 空なら入力内容から自動で作った文面を使う。 */
+  invite_message: string;
   note: string;
 }
 
@@ -148,10 +151,11 @@ function eventRow(draft: EventDraft) {
     title: draft.title.trim(),
     event_date: draft.event_date || null,
     start_time: draft.start_time || null,
-    location: draft.location,
+    location: draft.location.trim(),
     fee: toInt(draft.fee),
-    currency: draft.currency.trim() || "RM",
     capacity: toInt(draft.capacity) || null,
+    pay_method: draft.pay_method,
+    invite_message: draft.invite_message,
     note: draft.note,
   };
 }

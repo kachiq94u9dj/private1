@@ -100,7 +100,7 @@ Instagram の友達を整理し、イベントごとに「誘った・返事・�
 
 ## セットアップ時の注意
 
-- テーブル定義は `supabase/migrations/` の SQL を日付順に適用します
+- テーブル定義は `supabase/migrations/` の SQL を日付順に適用します（Supabase の SQL Editor に貼って実行してもかまいません）
   （`ig_friends` / `ig_tags` / `ig_friend_tags` / `ig_events` / `ig_event_attendees`）。
   RLS により、ログインした本人の行しか読み書きできません（匿名キーでは何も読めません）。
 - Supabase ダッシュボードの Authentication > URL Configuration で、Redirect URLs に

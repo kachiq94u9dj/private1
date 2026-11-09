@@ -1,5 +1,5 @@
 // 画面に依存しない絞り込み・集計ロジックと表示用の文言。
-import type { IgAttendeeRow, IgEventRow, IgFriendRow, IgFriendTagRow, IgTagRow, Reply } from "@/lib/supabase";
+import type { IgAttendeeRow, IgEventRow, IgFriendRow, IgFriendTagRow, IgTagRow, PayMethod, Reply } from "@/lib/supabase";
 
 // ---- タグの色 ----
 
@@ -7,18 +7,17 @@ export interface TagColor {
   label: string;
   fg: string;
   bg: string;
-  dot: string;
 }
 
 export const TAG_COLORS: Record<string, TagColor> = {
-  red: { label: "赤", fg: "#b33a1b", bg: "#fde5dc", dot: "#c0442a" },
-  green: { label: "緑", fg: "#2c6e35", bg: "#ddefdc", dot: "#2f7d3c" },
-  blue: { label: "青", fg: "#2457a6", bg: "#e1eafa", dot: "#2f62b8" },
-  purple: { label: "紫", fg: "#6a3ea1", bg: "#ece2f7", dot: "#6f42a8" },
-  yellow: { label: "黄", fg: "#855800", bg: "#fbecc6", dot: "#8f6206" },
-  teal: { label: "青緑", fg: "#12706a", bg: "#dbf0ee", dot: "#14716b" },
-  pink: { label: "桃", fg: "#a3306a", bg: "#fbe2ee", dot: "#b13a76" },
-  gray: { label: "灰", fg: "#55524c", bg: "#ebe9e4", dot: "#7a766e" },
+  red: { label: "赤", fg: "#9A3412", bg: "#FDE4D6" },
+  green: { label: "緑", fg: "#166534", bg: "#DCF0E2" },
+  blue: { label: "青", fg: "#1E4F91", bg: "#DFEAFB" },
+  purple: { label: "紫", fg: "#5B2E91", bg: "#ECE3F7" },
+  yellow: { label: "黄", fg: "#734D00", bg: "#FAEDC8" },
+  teal: { label: "青緑", fg: "#0F5959", bg: "#D9EFEF" },
+  pink: { label: "桃", fg: "#9D2463", bg: "#FBE2EE" },
+  gray: { label: "灰", fg: "#4A4640", bg: "#EFEDE9" },
 };
 
 export function tagColor(tag: IgTagRow | undefined): TagColor {
@@ -59,12 +58,18 @@ export interface FriendView {
   friend: IgFriendRow;
   communities: IgTagRow[];
   attributes: IgTagRow[];
+  /** 招待リストに入っているイベントの数。 */
   invitedCount: number;
+  /** 出席した、またはこれからのイベントに「参加」と返事した数。 */
   joinedCount: number;
   /** 手入力の「最後に会った日」と、出席したイベントの日付のうち新しい方。 */
   lastMet: string | null;
-  /** 招待リストに入っている、これからのイベント（一覧の並びで先頭のもの）。 */
-  upcomingEvent: IgEventRow | null;
+  /** 招待リストに入っているイベントの ID。 */
+  eventIds: Set<string>;
+}
+
+export function historyLabel(v: FriendView): string {
+  return v.invitedCount > 0 ? `招待 ${v.invitedCount}回 · 参加 ${v.joinedCount}回` : "まだ誘っていません";
 }
 
 export function buildFriendViews(
@@ -94,23 +99,22 @@ export function buildFriendViews(
 
   return friends.map((friend) => {
     const own = (tagsByFriend.get(friend.id) ?? []).sort((a, b) => a.created_at.localeCompare(b.created_at));
-    const rows = attendByFriend.get(friend.id) ?? [];
+    const rows = (attendByFriend.get(friend.id) ?? []).filter((a) => eventById.has(a.event_id));
     let lastMet = friend.last_met_on;
-    let upcomingEvent: IgEventRow | null = null;
+    let joinedCount = 0;
     for (const a of rows) {
-      const ev = eventById.get(a.event_id);
-      if (!ev) continue;
+      const ev = eventById.get(a.event_id)!;
       if (a.attended && ev.event_date && (!lastMet || ev.event_date > lastMet)) lastMet = ev.event_date;
-      if (!isEnded(ev, today) && (!upcomingEvent || compareEvents(ev, upcomingEvent) > 0)) upcomingEvent = ev;
+      if (a.attended || (a.reply === "yes" && !isEnded(ev, today))) joinedCount++;
     }
     return {
       friend,
       communities: own.filter((t) => t.kind === "community"),
       attributes: own.filter((t) => t.kind === "attribute"),
-      invitedCount: rows.filter((a) => a.invited).length,
-      joinedCount: rows.filter((a) => a.attended || a.reply === "yes").length,
+      invitedCount: rows.length,
+      joinedCount,
       lastMet,
-      upcomingEvent,
+      eventIds: new Set(rows.map((a) => a.event_id)),
     };
   });
 }
@@ -118,15 +122,17 @@ export function buildFriendViews(
 export interface FriendFilter {
   query: string;
   communityId: string | null;
-  attributeIds: string[];
+  attributeId: string | null;
 }
+
+export const EMPTY_FRIEND_FILTER: FriendFilter = { query: "", communityId: null, attributeId: null };
 
 export function filterFriendViews(views: FriendView[], filter: FriendFilter): FriendView[] {
   const q = filter.query.trim().toLowerCase().replace(/^@/, "");
   return views
     .filter((v) => {
       if (filter.communityId && !v.communities.some((t) => t.id === filter.communityId)) return false;
-      if (!filter.attributeIds.every((id) => v.attributes.some((t) => t.id === id))) return false;
+      if (filter.attributeId && !v.attributes.some((t) => t.id === filter.attributeId)) return false;
       if (!q) return true;
       const f = v.friend;
       return (
@@ -186,6 +192,21 @@ export function formatDateTime(iso: string | null): string {
   return `${p(d.getMonth() + 1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
 }
 
+/** 「11/21(土)」 */
+export function formatShortDate(ymd: string | null): string {
+  if (!ymd) return "日付未定";
+  const d = parseDate(ymd);
+  return `${d.getMonth() + 1}/${d.getDate()}(${WEEKDAYS[d.getDay()]})`;
+}
+
+/** 「2026年11月21日(土) 18:00」 */
+export function formatLongDate(ymd: string | null, time: string | null): string {
+  if (!ymd) return "日付未定";
+  const d = parseDate(ymd);
+  const t = time ? ` ${time.slice(0, 5)}` : "";
+  return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日(${WEEKDAYS[d.getDay()]})${t}`;
+}
+
 // ---- イベント ----
 
 export function isEnded(e: IgEventRow, today: string): boolean {
@@ -197,24 +218,13 @@ export function compareEvents(a: IgEventRow, b: IgEventRow): number {
   return (a.event_date ?? "9999").localeCompare(b.event_date ?? "9999") || a.created_at.localeCompare(b.created_at);
 }
 
-/** 一覧の並び: 日付の新しい順（デザインどおり、これからのイベントが上に来る）。 */
+/** 一覧の並び: 日付の新しい順（これからのイベントが上に来る）。 */
 export function sortEvents(events: IgEventRow[]): IgEventRow[] {
   return [...events].sort((a, b) => compareEvents(b, a));
 }
 
-/** 「11/21(土)」 */
-export function formatEventShort(e: IgEventRow): string {
-  if (!e.event_date) return "日付未定";
-  const d = parseDate(e.event_date);
-  return `${d.getMonth() + 1}/${d.getDate()}(${WEEKDAYS[d.getDay()]})`;
-}
-
-/** 「2026年11月21日(土) 18:00」 */
-export function formatEventLong(e: IgEventRow): string {
-  if (!e.event_date) return "日付未定";
-  const d = parseDate(e.event_date);
-  const time = e.start_time ? ` ${e.start_time.slice(0, 5)}` : "";
-  return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日(${WEEKDAYS[d.getDay()]})${time}`;
+export function formatFee(e: Pick<IgEventRow, "fee">): string {
+  return e.fee === null ? "会費未設定" : e.fee > 0 ? `会費 RM${e.fee.toLocaleString()}` : "無料";
 }
 
 export const REPLY_LABELS: Record<Reply, string> = { none: "未返信", yes: "参加", maybe: "未定", no: "不参加" };
@@ -226,30 +236,35 @@ export interface EventSummary {
   listed: number;
   invited: number;
   notInvited: number;
-  yes: number;
+  going: number;
   maybe: number;
   noReply: number;
-  attended: number;
+  came: number;
   paid: number;
   unpaid: number;
 }
 
 export function summarize(rows: IgAttendeeRow[]): EventSummary {
-  const yes = rows.filter((a) => a.reply === "yes");
   return {
     listed: rows.length,
     invited: rows.filter((a) => a.invited).length,
     notInvited: rows.filter((a) => !a.invited).length,
-    yes: yes.length,
-    maybe: rows.filter((a) => a.invited && a.reply === "maybe").length,
+    going: rows.filter((a) => a.reply === "yes").length,
+    maybe: rows.filter((a) => a.reply === "maybe").length,
     noReply: rows.filter((a) => a.invited && a.reply === "none").length,
-    attended: rows.filter((a) => a.attended).length,
-    paid: yes.filter((a) => a.paid).length,
-    unpaid: yes.filter((a) => !a.paid).length,
+    came: rows.filter((a) => a.attended).length,
+    paid: rows.filter((a) => a.paid).length,
+    unpaid: rows.filter((a) => a.reply === "yes" && !a.paid).length,
   };
 }
 
+export function percent(n: number, total: number): number {
+  return total > 0 ? Math.min(100, Math.round((n / total) * 100)) : 0;
+}
+
 export type InviteFilter = "all" | "not_invited" | "no_reply" | "unpaid";
+
+export const INVITE_FILTERS: InviteFilter[] = ["all", "not_invited", "no_reply", "unpaid"];
 
 export const INVITE_FILTER_LABELS: Record<InviteFilter, string> = {
   all: "すべて",
@@ -269,6 +284,56 @@ export function inviteFilterCount(s: EventSummary, filter: InviteFilter): number
   return { all: s.listed, not_invited: s.notInvited, no_reply: s.noReply, unpaid: s.unpaid }[filter];
 }
 
-export function formatMoney(amount: number, currency: string): string {
-  return `${currency}${amount.toLocaleString()}`;
+// ---- イベント作成 ----
+
+export const PAY_METHODS: PayMethod[] = ["cash", "transfer", "duitnow", "none"];
+
+export const PAY_LABELS: Record<PayMethod, string> = {
+  cash: "当日現金",
+  transfer: "事前振込",
+  duitnow: "DuitNow QR",
+  none: "なし",
+};
+
+export interface EventTemplate {
+  label: string;
+  title: string;
+  location: string;
+  fee: string;
+  capacity: string;
+  startTime: string;
+  payMethod: PayMethod;
+}
+
+export const EVENT_TEMPLATES: EventTemplate[] = [
+  { label: "飲み会", title: "飲み会", location: "Bukit Bintang", fee: "80", capacity: "12", startTime: "20:00", payMethod: "cash" },
+  { label: "BBQ", title: "BBQナイト", location: "Mont Kiara", fee: "60", capacity: "15", startTime: "18:00", payMethod: "transfer" },
+  { label: "ボードゲーム会", title: "ボードゲーム会", location: "Bangsar South", fee: "25", capacity: "8", startTime: "14:00", payMethod: "duitnow" },
+  { label: "朝ラン", title: "KLCC朝ラン", location: "KLCC公園", fee: "0", capacity: "20", startTime: "07:00", payMethod: "none" },
+];
+
+/** 入力内容から DM 用の招待メッセージを作る。 */
+export function autoInviteMessage(d: {
+  title: string;
+  event_date: string;
+  start_time: string;
+  location: string;
+  fee: string;
+  capacity: string;
+  pay_method: PayMethod;
+}): string {
+  const date = d.event_date ? formatLongDate(d.event_date, d.start_time || null) : "調整中";
+  const fee =
+    d.fee !== "" && Number(d.fee) > 0
+      ? `RM${d.fee}${d.pay_method !== "none" ? `(${PAY_LABELS[d.pay_method]})` : ""}`
+      : "無料";
+  return [
+    `${d.title.trim() || "イベント"}を開催します!`,
+    `日時:${date}`,
+    `場所:${d.location.trim() || "調整中"}`,
+    `会費:${fee}`,
+    ...(d.capacity ? [`定員:${d.capacity}人`] : []),
+    "",
+    "来られそうだったら返信ください!",
+  ].join("\n");
 }

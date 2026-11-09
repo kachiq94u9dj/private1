@@ -6,27 +6,36 @@ import type { IgFriendRow, IgTagRow } from "@/lib/supabase";
 
 // ---- icons ----
 
-function Svg({ children, size = 18 }: { children: ReactNode; size?: number }) {
+function Svg({ children, size = 18, width = 2 }: { children: ReactNode; size?: number; width?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={width} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
       {children}
     </svg>
   );
 }
 
+const peoplePaths = (
+  <>
+    <circle cx="9" cy="8" r="3.5" />
+    <path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5" />
+    <circle cx="17" cy="9" r="2.5" />
+    <path d="M17 14.5c2.4.2 4 1.8 4.5 4.5" />
+  </>
+);
+
 export const Icon = {
-  people: (
-    <Svg size={22}>
-      <circle cx="9" cy="8" r="3.5" />
-      <path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5" />
-      <circle cx="17" cy="9" r="2.5" />
-      <path d="M16.5 14.6c2.6.2 4.4 1.9 5 4.9" />
+  people: <Svg size={22}>{peoplePaths}</Svg>,
+  peopleNav: <Svg size={24}>{peoplePaths}</Svg>,
+  calendar: (
+    <Svg size={24}>
+      <rect x="3.5" y="5" width="17" height="15" rx="2.5" />
+      <path d="M3.5 10h17M8 3v4M16 3v4" />
     </Svg>
   ),
   refresh: (
-    <Svg size={16}>
-      <path d="M20 12a8 8 0 1 1-2.3-5.7" />
-      <path d="M20 4v5h-5" />
+    <Svg size={18}>
+      <path d="M21 12a9 9 0 1 1-2.6-6.4" />
+      <path d="M21 4v5h-5" />
     </Svg>
   ),
   search: (
@@ -40,10 +49,15 @@ export const Icon = {
       <path d="M6 6l12 12M18 6 6 18" />
     </Svg>
   ),
-  check: (
-    <Svg size={16}>
-      <path d="m5 12 5 5 9-10" />
+  plus: (
+    <Svg size={20} width={2.5}>
+      <path d="M12 5v14M5 12h14" />
     </Svg>
+  ),
+  check: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="m5 12.5 4.5 4.5L19 7.5" />
+    </svg>
   ),
 };
 
@@ -52,7 +66,7 @@ export const Icon = {
 export function Avatar({ friend, color, small }: { friend: IgFriendRow; color?: IgTagRow; small?: boolean }) {
   const c = tagColor(color);
   return (
-    <span className={`tn-avatar${small ? " tn-avatar-sm" : ""}`} style={{ background: c.bg, color: c.fg }}>
+    <span className={`tn-avatar${small ? " tn-avatar-sm" : ""}`} style={{ background: c.bg, color: c.fg }} aria-hidden>
       {avatarLabel(friend)}
     </span>
   );
@@ -60,7 +74,7 @@ export function Avatar({ friend, color, small }: { friend: IgFriendRow; color?: 
 
 export function PersonName({ friend }: { friend: IgFriendRow }) {
   return (
-    <div style={{ minWidth: 0 }}>
+    <div className="tn-person">
       <p className="tn-name">{displayName(friend)}</p>
       <a className="tn-handle" href={profileUrl(friend.username)} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>
         @{friend.username}
@@ -79,12 +93,39 @@ export function TagChip({ tag }: { tag: IgTagRow }) {
   );
 }
 
-export function Checkbox({ checked, onChange, label }: { checked: boolean; onChange: () => void; label: string }) {
+/** コミュニティタグで色付けする、押し込み式のチップ（選択中はタグの色になる）。 */
+export function CommunityChip({
+  tag,
+  active,
+  onClick,
+  children,
+  className = "",
+}: {
+  tag: IgTagRow;
+  active: boolean;
+  onClick: () => void;
+  children: ReactNode;
+  className?: string;
+}) {
+  const c = tagColor(tag);
   return (
     <button
       type="button"
-      role="checkbox"
-      aria-checked={checked}
+      className={`tn-chip ${className}`}
+      aria-pressed={active}
+      onClick={onClick}
+      style={active ? { background: c.bg, borderColor: c.fg, color: c.fg } : undefined}
+    >
+      {children}
+    </button>
+  );
+}
+
+export function SelectBox({ checked, onChange, label }: { checked: boolean; onChange: () => void; label: string }) {
+  return (
+    <button
+      type="button"
+      aria-pressed={checked}
       aria-label={label}
       className="tn-check"
       onClick={(e) => {
@@ -92,7 +133,7 @@ export function Checkbox({ checked, onChange, label }: { checked: boolean; onCha
         onChange();
       }}
     >
-      {checked && Icon.check}
+      <span>{checked && Icon.check}</span>
     </button>
   );
 }
@@ -108,13 +149,11 @@ export function Modal({
   onClose,
   children,
   footer,
-  wide,
 }: {
   title: string;
   onClose: () => void;
   children: ReactNode;
   footer?: ReactNode;
-  wide?: boolean;
 }) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -124,7 +163,7 @@ export function Modal({
 
   return (
     <div className="tn-overlay" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div className={`tn-modal${wide ? " tn-modal-wide" : ""}`} role="dialog" aria-modal="true" aria-label={title}>
+      <div className="tn-modal" role="dialog" aria-modal="true" aria-label={title}>
         <div className="tn-modal-head">
           <h2 className="tn-modal-title">{title}</h2>
           <button className="tn-icon-btn" style={{ marginLeft: "auto" }} onClick={onClose} aria-label="閉じる">
@@ -143,9 +182,13 @@ export function Modal({
 export function useCopy(): [boolean, (text: string) => Promise<void>] {
   const [copied, setCopied] = useState(false);
   async function copy(text: string) {
-    await navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // クリップボードが使えない環境では何もしない
+    }
   }
   return [copied, copy];
 }
@@ -177,7 +220,7 @@ export function LinksModal({
       }
     >
       {children}
-      <p className="tn-muted" style={{ marginTop: 0 }}>
+      <p className="tn-muted" style={{ margin: 0 }}>
         {usernames.length}人。クリックすると Instagram のプロフィールが開きます。
       </p>
       <ol className="tn-links">
@@ -194,16 +237,15 @@ export function LinksModal({
 }
 
 /** 「@ユーザー名をコピー」「プロフィールのリンク一覧」の2つのボタン。 */
-export function ExportButtons({ usernames, label, small }: { usernames: string[]; label: string; small?: boolean }) {
+export function ExportButtons({ usernames, label }: { usernames: string[]; label: string }) {
   const [copied, copy] = useCopy();
   const [showLinks, setShowLinks] = useState(false);
-  const cls = `tn-btn${small ? " tn-btn-sm" : ""}`;
   return (
     <>
-      <button className={cls} disabled={usernames.length === 0} onClick={() => copy(usernamesText(usernames))}>
+      <button className="tn-btn tn-btn-sm" disabled={usernames.length === 0} onClick={() => copy(usernamesText(usernames))}>
         {copied ? "コピーしました" : "@ユーザー名をコピー"}
       </button>
-      <button className={cls} disabled={usernames.length === 0} onClick={() => setShowLinks(true)}>
+      <button className="tn-btn tn-btn-sm" disabled={usernames.length === 0} onClick={() => setShowLinks(true)}>
         プロフィールのリンク一覧
       </button>
       {showLinks && <LinksModal title={label} usernames={usernames} onClose={() => setShowLinks(false)} />}

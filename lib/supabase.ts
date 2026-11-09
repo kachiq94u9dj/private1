@@ -64,9 +64,13 @@ export interface IgEventRow {
   fee: number | null;
   currency: string;
   capacity: number | null;
+  pay_method: PayMethod;
+  invite_message: string;
   note: string;
   created_at: string;
 }
+
+export type PayMethod = "cash" | "transfer" | "duitnow" | "none";
 
 export type Reply = "none" | "yes" | "maybe" | "no";
 

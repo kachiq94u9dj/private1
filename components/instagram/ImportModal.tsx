@@ -12,11 +12,13 @@ export default function ImportModal({
   existing,
   onClose,
   onImported,
+  onSignOut,
 }: {
   ownerId: string;
   existing: IgFriendRow[];
   onClose: () => void;
   onImported: () => Promise<void>;
+  onSignOut: () => void;
 }) {
   const [parsing, setParsing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -89,9 +91,14 @@ export default function ImportModal({
             </button>
           </>
         ) : (
-          <button className="tn-btn" onClick={onClose}>
-            閉じる
-          </button>
+          <>
+            <button type="button" className="tn-btn-link tn-sp" style={{ marginRight: "auto" }} onClick={onSignOut}>
+              ログアウト
+            </button>
+            <button type="button" className="tn-btn" onClick={onClose}>
+              閉じる
+            </button>
+          </>
         )
       }
     >

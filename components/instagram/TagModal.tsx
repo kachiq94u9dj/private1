@@ -45,6 +45,7 @@ export default function TagModal({
   return (
     <Modal title="タグを作成・管理" onClose={onClose}>
       <form
+        style={{ display: "flex", flexDirection: "column", gap: 14 }}
         onSubmit={(e) => {
           e.preventDefault();
           void submit();
@@ -52,11 +53,11 @@ export default function TagModal({
       >
         <div className="tn-field">
           種類
-          <div className="tn-segment">
-            <button type="button" className="tn-filter-chip" aria-pressed={kind === "community"} onClick={() => setKind("community")}>
+          <div className="tn-chips">
+            <button type="button" className="tn-chip" aria-pressed={kind === "community"} onClick={() => setKind("community")}>
               コミュニティ・出会った場所
             </button>
-            <button type="button" className="tn-filter-chip" aria-pressed={kind === "attribute"} onClick={() => setKind("attribute")}>
+            <button type="button" className="tn-chip" aria-pressed={kind === "attribute"} onClick={() => setKind("attribute")}>
               属性（日本人・学生など）
             </button>
           </div>
@@ -81,14 +82,14 @@ export default function TagModal({
                   className="tn-swatch"
                   aria-pressed={color === key}
                   aria-label={c.label}
-                  style={{ background: c.dot }}
+                  style={{ background: c.fg }}
                   onClick={() => setColor(key)}
                 />
               ))}
             </div>
           </div>
         )}
-        <button type="submit" className="tn-btn tn-btn-dark" disabled={busy || !name.trim()}>
+        <button type="submit" className="tn-btn tn-btn-dark" style={{ alignSelf: "flex-start" }} disabled={busy || !name.trim()}>
           作成する
         </button>
         {error && <p className="tn-error">{error}</p>}
@@ -96,11 +97,11 @@ export default function TagModal({
 
       {tags.length > 0 && (
         <>
-          <p className="tn-side-label" style={{ marginTop: 24 }}>
+          <p className="tn-label" style={{ marginTop: 12 }}>
             作成済みのタグ
           </p>
           {tags.map((t) => (
-            <div key={t.id} className="tn-pick-row" style={{ cursor: "default" }}>
+            <div key={t.id} className="tn-row-item">
               <TagChip tag={t} />
               <span className="tn-muted">{counts.get(t.id) ?? 0}人</span>
               <button
