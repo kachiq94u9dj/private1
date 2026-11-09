@@ -104,12 +104,14 @@ export function parseConnectionList(html: string): { username: string; at: strin
   return result;
 }
 
+// Instagram のフォロワー/フォロー中は followers_and_following フォルダにある。
+// 同じファイル名が Threads（your_instagram_activity/threads/）にもあるので、フォルダで区別する。
 function isFollowersFile(path: string): boolean {
-  return /(^|\/)followers(_\d+)?\.html$/i.test(path);
+  return /(^|[\\/])followers_and_following[\\/]followers(_\d+)?\.html$/i.test(path);
 }
 
 function isFollowingFile(path: string): boolean {
-  return /(^|\/)following\.html$/i.test(path);
+  return /(^|[\\/])followers_and_following[\\/]following\.html$/i.test(path);
 }
 
 function inboxThreadFolder(path: string): string | null {

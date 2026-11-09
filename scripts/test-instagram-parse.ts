@@ -30,6 +30,9 @@ const result = parseExport([
   { path: "instagram-me/your_instagram_activity/messages/inbox/groupchat_99/message_1.html", html: dmGroup },
   { path: "instagram-me/your_instagram_activity/messages/inbox/someone_55/message_1.html", html: dmStranger },
   { path: "instagram-me/connections/followers_and_following/close_friends.html", html: followers },
+  // Threads のフォロワーは Instagram の友達として数えない
+  { path: "instagram-me/your_instagram_activity/threads/followers.html", html: following },
+  { path: "instagram-me/your_instagram_activity/threads/following.html", html: followers },
 ]);
 
 assert.equal(result.followerFiles, 1);
