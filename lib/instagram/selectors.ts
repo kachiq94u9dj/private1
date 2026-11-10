@@ -143,13 +143,15 @@ export function filterFriendViews(views: FriendView[], filter: FriendFilter): Fr
         [...v.communities, ...v.attributes].some((t) => t.name.toLowerCase().includes(q))
       );
     })
-    .sort(
-      (a, b) =>
-        (b.lastMet ?? "").localeCompare(a.lastMet ?? "") ||
-        Number(!!b.friend.display_name) - Number(!!a.friend.display_name) ||
-        (b.friend.last_dm_at ?? "").localeCompare(a.friend.last_dm_at ?? "") ||
-        a.friend.username.localeCompare(b.friend.username),
-    );
+    // 名前・タグ・最後に会った日など、画面で編集する項目では並べない（保存するたびに位置が動かないように）。
+    // つながった日（取り込み時にだけ変わる）の新しい順、同じならユーザー名順。
+    .sort((a, b) => connectedAt(b.friend).localeCompare(connectedAt(a.friend)) || a.friend.username.localeCompare(b.friend.username));
+}
+
+function connectedAt(f: IgFriendRow): string {
+  const a = f.followed_me_at ?? "";
+  const b = f.i_followed_at ?? "";
+  return a > b ? a : b;
 }
 
 export function tagCounts(friendTags: IgFriendTagRow[]): Map<string, number> {
