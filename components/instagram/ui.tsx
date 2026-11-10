@@ -72,15 +72,23 @@ export function Avatar({ friend, color, small }: { friend: IgFriendRow; color?: 
   );
 }
 
-/** Instagram のプロフィールと同じ並び: 太字のユーザー名（プロフィールへのリンク）、その下に名前。 */
+/** 名前（太字）とその下に @ユーザー名。名前が未入力ならユーザー名を太字にする。どちらを押しても Instagram が開く。 */
 export function PersonName({ friend }: { friend: IgFriendRow }) {
   const name = friend.display_name.trim();
+  const url = profileUrl(friend.username);
+  const stop = (e: { stopPropagation: () => void }) => e.stopPropagation();
   return (
     <div className="tn-person">
-      <a className="tn-name tn-name-link" href={profileUrl(friend.username)} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>
-        {friend.username}
+      <a className="tn-name tn-name-link" href={url} target="_blank" rel="noreferrer" onClick={stop}>
+        {name || friend.username}
       </a>
-      {name ? <span className="tn-handle">{name}</span> : <span className="tn-handle tn-handle-empty">名前未入力</span>}
+      {name ? (
+        <a className="tn-handle" href={url} target="_blank" rel="noreferrer" onClick={stop}>
+          @{friend.username}
+        </a>
+      ) : (
+        <span className="tn-handle tn-handle-empty">名前未入力</span>
+      )}
     </div>
   );
 }

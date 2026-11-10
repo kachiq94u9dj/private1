@@ -76,9 +76,11 @@ export default function FriendEditModal({
         <Avatar friend={{ ...f, display_name: displayName }} color={firstCommunity} />
         <div className="tn-person">
           <a className="tn-name tn-name-link" href={profileUrl(f.username)} target="_blank" rel="noreferrer">
-            {f.username}
+            {displayName.trim() || f.username}
           </a>
-          <span className="tn-handle">{displayName.trim() || "名前未入力"}</span>
+          <a className="tn-handle" href={profileUrl(f.username)} target="_blank" rel="noreferrer">
+            @{f.username}
+          </a>
         </div>
       </div>
 
