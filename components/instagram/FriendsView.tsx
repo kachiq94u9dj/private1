@@ -3,9 +3,7 @@
 import { useMemo, useState } from "react";
 import {
   filterFriendViews,
-  formatMonthDay,
   formatShortDate,
-  historyLabel,
   tagColor,
   tagCounts,
   type FriendFilter,
@@ -58,17 +56,9 @@ function FriendCard({
             ))}
           </div>
         )}
-        <dl className="tn-facts">
-          <dt>出会い</dt>
-          <dd>{friend.met_where || "—"}</dd>
-          <dt>最後に会った</dt>
-          <dd>{formatMonthDay(view.lastMet)}</dd>
-          <dt>参加歴</dt>
-          <dd>{historyLabel(view)}</dd>
-        </dl>
-        <span className="tn-facts-line tn-sp">
-          {friend.met_where || "出会い未入力"} · 最後 {formatMonthDay(view.lastMet)}
-        </span>
+        <p className="tn-memo" data-empty={!friend.note.trim()}>
+          {friend.note.trim() || "メモなし（カードを押して入力）"}
+        </p>
         {inTarget && (
           <div className="tn-banner">
             「{target.title}」<span className="tn-pc">の招待リスト</span>に追加済み

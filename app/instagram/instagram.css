@@ -643,25 +643,35 @@ a.tn-handle:hover {
   background: var(--tn-accent);
 }
 
-.tn-facts {
+.tn-name-link {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+
+a.tn-name-link:hover {
+  text-decoration: underline;
+}
+
+.tn-handle-empty {
+  color: #a8a39a;
+}
+
+.tn-memo {
   margin: 0;
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 4px 12px;
   font-size: 13px;
-}
-
-.tn-facts dt {
-  color: var(--tn-text-3);
-}
-
-.tn-facts dd {
-  margin: 0;
-}
-
-.tn-facts-line {
-  font-size: 12px;
+  line-height: 1.6;
   color: var(--tn-text-2);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.tn-memo[data-empty="true"] {
+  color: #a8a39a;
 }
 
 .tn-banner {
@@ -1536,10 +1546,6 @@ textarea.tn-input {
 
   .tn-card .tn-tags {
     gap: 4px;
-  }
-
-  .tn-card .tn-facts {
-    display: none;
   }
 
   .tn-card .tn-banner {

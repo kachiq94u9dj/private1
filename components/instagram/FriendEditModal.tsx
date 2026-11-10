@@ -75,10 +75,10 @@ export default function FriendEditModal({
       <div className="tn-row-person">
         <Avatar friend={{ ...f, display_name: displayName }} color={firstCommunity} />
         <div className="tn-person">
-          <p className="tn-name">{displayName || f.username}</p>
-          <a className="tn-handle" href={profileUrl(f.username)} target="_blank" rel="noreferrer">
-            @{f.username}（Instagram を開く）
+          <a className="tn-name tn-name-link" href={profileUrl(f.username)} target="_blank" rel="noreferrer">
+            {f.username}
           </a>
+          <span className="tn-handle">{displayName.trim() || "名前未入力"}</span>
         </div>
       </div>
 
@@ -92,8 +92,12 @@ export default function FriendEditModal({
       </div>
 
       <label className="tn-field">
-        名前
-        <input className="tn-input" value={displayName} placeholder={f.username} onChange={(e) => setDisplayName(e.target.value)} />
+        名前（Instagram のプロフィール名など）
+        <input className="tn-input" value={displayName} placeholder="例:momoka" onChange={(e) => setDisplayName(e.target.value)} />
+      </label>
+      <label className="tn-field">
+        メモ（カードに表示されます）
+        <textarea className="tn-input" rows={3} value={note} placeholder="例:前回の BBQ に来てくれた。お酒は飲まない" onChange={(e) => setNote(e.target.value)} />
       </label>
       <div className="tn-form-grid">
         <label className="tn-field">
@@ -133,10 +137,6 @@ export default function FriendEditModal({
           </div>
         )}
       </div>
-      <label className="tn-field">
-        メモ
-        <textarea className="tn-input" rows={3} value={note} onChange={(e) => setNote(e.target.value)} />
-      </label>
       <p className="tn-muted" style={{ margin: 0, fontSize: 12 }}>
         「最後に会った」は、ここで入れた日と、出席にチェックしたイベントの日付のうち新しい方が表示されます。
       </p>

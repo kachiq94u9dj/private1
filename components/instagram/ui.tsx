@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
-import { avatarLabel, displayName, profileUrl, tagColor } from "@/lib/instagram/selectors";
+import { avatarLabel, profileUrl, tagColor } from "@/lib/instagram/selectors";
 import type { IgFriendRow, IgTagRow } from "@/lib/supabase";
 
 // ---- icons ----
@@ -72,13 +72,15 @@ export function Avatar({ friend, color, small }: { friend: IgFriendRow; color?: 
   );
 }
 
+/** Instagram のプロフィールと同じ並び: 太字のユーザー名（プロフィールへのリンク）、その下に名前。 */
 export function PersonName({ friend }: { friend: IgFriendRow }) {
+  const name = friend.display_name.trim();
   return (
     <div className="tn-person">
-      <p className="tn-name">{displayName(friend)}</p>
-      <a className="tn-handle" href={profileUrl(friend.username)} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>
-        @{friend.username}
+      <a className="tn-name tn-name-link" href={profileUrl(friend.username)} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>
+        {friend.username}
       </a>
+      {name ? <span className="tn-handle">{name}</span> : <span className="tn-handle tn-handle-empty">名前未入力</span>}
     </div>
   );
 }
