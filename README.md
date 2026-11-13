@@ -129,9 +129,8 @@ Next.js を Cloudflare Workers で動かす [OpenNext](https://opennext.js.org/c
 2. GitHub で Cloudflare Workers and Pages アプリをインストールし、このリポジトリだけを許可する
 3. 次のように設定して **Connect**
    - Production branch: `main`
-   - Build command: 空欄、または `npm run build`（どちらでもよい）
+   - Build command: `npx opennextjs-cloudflare build`（`npm run build` だけだと、deploy で「compiled Open Next config が見つからない」と失敗する）
    - Deploy command: `npx wrangler deploy`
-     （`wrangler.jsonc` の `build.command` で、デプロイ前に OpenNext のビルドが自動で走る）
    - 環境変数は不要（Supabase の公開用 URL/キーはコードに既定値があります）
 4. 接続しただけではビルドは始まらない。次に main に変更が入ったときに最初の公開が行われる
 5. Supabase の **Authentication → URL Configuration → Redirect URLs** に公開 URL（上記）を追加する
@@ -146,4 +145,4 @@ npx wrangler login
 npm run deploy
 ```
 
-`npm run preview` で、Workers と同じ環境を手元で動かして確認できます（先に `npx opennextjs-cloudflare build` を実行）。
+`npm run preview` で、Workers と同じ環境を手元で動かして確認できます。
