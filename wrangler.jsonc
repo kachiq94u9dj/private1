@@ -1,0 +1,22 @@
+// Cloudflare Workers の設定（OpenNext で Next.js を Workers 上で動かす）。
+// デプロイ: npm run deploy、手元で Workers として確認: npm run preview
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "tomodachi-note",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "services": [
+    {
+      "binding": "WORKER_SELF_REFERENCE",
+      "service": "tomodachi-note"
+    }
+  ],
+  "observability": {
+    "enabled": true
+  }
+}

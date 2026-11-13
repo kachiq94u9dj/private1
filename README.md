@@ -109,3 +109,34 @@ Instagram の友達を整理し、イベントごとに「誘った・返事・�
   「Allow new users to sign up」をオフにすると、他人がアカウントを作れなくなります。
 - パーサーのテスト: `npm run test:instagram`
 - 手元の ZIP が読めるかの確認（中身は送信せず、件数だけ表示）: `npm run check:instagram -- <展開したフォルダ または ZIP のパス>`
+
+## Cloudflare で公開する（スマホからも使えるようにする）
+
+Next.js を Cloudflare Workers で動かす [OpenNext](https://opennext.js.org/cloudflare) を使います。
+設定は `wrangler.jsonc` と `open-next.config.ts` にあります（Worker 名: `tomodachi-note`）。
+
+### おすすめ: GitHub と連携して自動で公開する
+
+一度設定すると、このリポジトリに変更がプッシュされるたびに自動で公開し直されます。
+
+1. Cloudflare ダッシュボードの **Workers & Pages → Create → Import a repository** で GitHub を連携し、このリポジトリを選ぶ
+2. 次のように設定して **Deploy**
+   - Project name: `tomodachi-note`（`wrangler.jsonc` の name と同じにする）
+   - Build command: `npx opennextjs-cloudflare build`
+   - Deploy command: `npx opennextjs-cloudflare deploy`
+   - 公開するブランチ: 作業中のブランチ（main にマージ済みなら main）
+   - 環境変数は不要（Supabase の公開用 URL/キーはコードに既定値があります）
+3. 公開された URL（`https://tomodachi-note.<アカウント名>.workers.dev`）を、Supabase の
+   **Authentication → URL Configuration → Redirect URLs** に `https://tomodachi-note.<アカウント名>.workers.dev/instagram` として追加する
+
+### 手元から公開する場合
+
+```bash
+npx wrangler login
+```
+
+```bash
+npm run deploy
+```
+
+`npm run preview` で、Workers と同じ環境を手元で動かして確認できます。
