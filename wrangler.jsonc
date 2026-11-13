@@ -1,9 +1,14 @@
 // Cloudflare Workers の設定（OpenNext で Next.js を Workers 上で動かす）。
-// デプロイ: npm run deploy、手元で Workers として確認: npm run preview
+// デプロイ: npm run deploy（= wrangler deploy）、手元で Workers として確認: npm run preview
+// build.command により、wrangler deploy の前に毎回 OpenNext のビルドが走る。
+// そのため Cloudflare の GitHub 連携（Workers Builds）は初期設定の deploy コマンドのままで公開できる。
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "tomodachi-note",
   "main": ".open-next/worker.js",
+  "build": {
+    "command": "npx opennextjs-cloudflare build"
+  },
   "compatibility_date": "2026-10-01",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
   "assets": {
