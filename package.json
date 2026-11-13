@@ -6,9 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "collect": "tsx scripts/collect-usage.ts"
+    "collect": "tsx scripts/collect-usage.ts",
+    "notion:setup": "NODE_USE_ENV_PROXY=1 node scripts/setup-notion-base.mjs"
   },
   "dependencies": {
+    "@notionhq/client": "^5.31.1",
     "@supabase/supabase-js": "^2.45.4",
     "next": "^15.0.3",
     "react": "^19.0.0",
