@@ -117,15 +117,24 @@ Next.js を Cloudflare Workers で動かす [OpenNext](https://opennext.js.org/c
 
 ### おすすめ: GitHub と連携して自動で公開する
 
-一度設定すると、このリポジトリに変更がプッシュされるたびに自動で公開し直されます。
+一度設定すると、main ブランチに変更が入る（プルリクエストをマージする）たびに自動で公開し直されます。
 
-1. Cloudflare ダッシュボードの **Workers & Pages → Create → Import a repository** で GitHub を連携し、このリポジトリを選ぶ
-2. Project name を `tomodachi-note`（`wrangler.jsonc` の name と同じ）にして **Deploy**。
-   Build command / Deploy command は初期設定（空欄 / `npx wrangler deploy`）のままでよい
-   （`wrangler.jsonc` の `build.command` で、デプロイ前に OpenNext のビルドが自動で走る）。
-   公開するブランチは、このアプリが入っているブランチ（main にマージ済みなら main）。環境変数は不要。
-3. 公開された URL（`https://tomodachi-note.<アカウント名>.workers.dev`）を、Supabase の
-   **Authentication → URL Configuration → Redirect URLs** に `https://tomodachi-note.<アカウント名>.workers.dev/instagram` として追加する
+- Worker: `tomodachi-note`（アカウントの workers.dev サブドメインは `tomodachi-note`）
+- 公開 URL: https://tomodachi-note.tomodachi-note.workers.dev/instagram
+
+設定手順（Cloudflare ダッシュボード）:
+
+1. **Workers & Pages → tomodachi-note → Settings → Builds → Git repository** の **GitHub** を押す
+   （Worker がまだなければ **Create → Connect GitHub** で作る。名前は `wrangler.jsonc` の name と同じ `tomodachi-note`）
+2. GitHub で Cloudflare Workers and Pages アプリをインストールし、このリポジトリだけを許可する
+3. 次のように設定して **Connect**
+   - Production branch: `main`
+   - Build command: 空欄、または `npm run build`（どちらでもよい）
+   - Deploy command: `npx wrangler deploy`
+     （`wrangler.jsonc` の `build.command` で、デプロイ前に OpenNext のビルドが自動で走る）
+   - 環境変数は不要（Supabase の公開用 URL/キーはコードに既定値があります）
+4. 接続しただけではビルドは始まらない。次に main に変更が入ったときに最初の公開が行われる
+5. Supabase の **Authentication → URL Configuration → Redirect URLs** に公開 URL（上記）を追加する
 
 ### 手元から公開する場合
 
