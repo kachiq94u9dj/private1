@@ -89,6 +89,8 @@ export default function InstagramApp() {
   const [activeEventId, setActiveEventId] = useState<string | null>(null);
   const [inviteFilter, setInviteFilter] = useState<InviteFilter>("all");
   const [actionError, setActionError] = useState<string | null>(null);
+  // 招待リストに追加したあとの「追加しました」表示（友達一覧に残ったまま続けて選べるように、画面は移らない）
+  const [notice, setNotice] = useState<{ text: string; eventId: string } | null>(null);
   const today = localDateString();
 
   const views = useMemo(
@@ -105,6 +107,12 @@ export default function InstagramApp() {
     if (loaded && friends.length === 0) setImporting(true);
   }, [loaded, friends.length]);
 
+  useEffect(() => {
+    if (!notice) return;
+    const timer = setTimeout(() => setNotice(null), 6000);
+    return () => clearTimeout(timer);
+  }, [notice]);
+
   function go(next: Tab) {
     setForm(null);
     setTab(next);
@@ -114,12 +122,12 @@ export default function InstagramApp() {
   async function addSelectedToTarget() {
     if (!target || selected.size === 0) return;
     try {
+      const count = selected.size;
       await addAttendees(target.id, [...selected]);
       await reload();
       setSelected(new Set());
-      setActiveEventId(target.id);
-      setInviteFilter("not_invited");
-      go("events");
+      setActionError(null);
+      setNotice({ text: `${count}人を「${target.title}」の招待リストに追加しました`, eventId: target.id });
     } catch (e) {
       setActionError(`招待リストに追加できませんでした: ${errorMessage(e)}`);
     }
@@ -244,6 +252,26 @@ export default function InstagramApp() {
             {Icon.calendar}イベント
           </button>
         </nav>
+      )}
+
+      {notice && (
+        <div className="tn-toast" role="status">
+          <span>{notice.text}</span>
+          <button
+            type="button"
+            onClick={() => {
+              setActiveEventId(notice.eventId);
+              setInviteFilter("not_invited");
+              setNotice(null);
+              go("events");
+            }}
+          >
+            イベントを見る
+          </button>
+          <button type="button" className="tn-toast-close" aria-label="閉じる" onClick={() => setNotice(null)}>
+            {Icon.close}
+          </button>
+        </div>
       )}
 
       {importing && (

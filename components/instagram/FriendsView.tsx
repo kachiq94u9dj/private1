@@ -378,7 +378,8 @@ export default function FriendsView({
               ))}
             </div>
           )}
-          {selected.size > 0 && <div className="tn-sp" style={{ height: 150 }} aria-hidden />}
+          {/* 画面下に浮かぶ選択中バーで最後のカードが隠れないよう、一覧の末尾に余白を足す */}
+          {selected.size > 0 && <div style={{ height: 150 }} aria-hidden />}
         </section>
       </div>
 

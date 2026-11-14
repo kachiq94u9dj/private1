@@ -482,6 +482,14 @@
 /* ---- selection bar ---- */
 
 .tn-selbar {
+  /* 画面下に浮かべる。一覧の中に場所を取らないので、出たり消えたりしてもカードの位置が動かない */
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  width: min(980px, calc(100vw - 48px));
+  z-index: 20;
+  box-shadow: 0 8px 24px rgba(27, 26, 24, 0.25);
   background: var(--tn-text);
   color: #fff;
   border-radius: 14px;
@@ -1362,6 +1370,47 @@ textarea.tn-input {
   gap: 24px;
 }
 
+/* ---- toast ---- */
+
+.tn-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: max-content;
+  max-width: calc(100vw - 32px);
+  background: var(--tn-text);
+  color: #fff;
+  border-radius: 12px;
+  padding: 10px 8px 10px 16px;
+  font-size: 14px;
+  font-weight: 700;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+}
+
+.tn-toast button {
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: transparent;
+  color: #fff;
+  border-radius: 8px;
+  min-height: 36px;
+  padding: 0 12px;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.tn-toast .tn-toast-close {
+  border: 0;
+  padding: 0 6px;
+  display: grid;
+  place-items: center;
+}
+
 /* ---- bottom nav (SP) ---- */
 
 .tn-bottom-nav {
@@ -1565,6 +1614,8 @@ textarea.tn-input {
     position: fixed;
     left: 0;
     right: 0;
+    width: auto;
+    transform: none;
     bottom: 76px;
     z-index: 20;
     border-radius: 0;
@@ -1953,6 +2004,11 @@ textarea.tn-input {
     width: 100%;
     max-height: 92vh;
     border-radius: 16px 16px 0 0;
+  }
+
+  .tn-toast {
+    bottom: 88px;
+    font-size: 13px;
   }
 
   .tn-bottom-nav {
