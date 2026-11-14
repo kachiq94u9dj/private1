@@ -18,19 +18,20 @@ import { Avatar, CommunityChip, Icon, PersonName, SelectBox, TagChip, errorMessa
 function FriendCard({
   view,
   selected,
-  target,
+  targets,
   onToggle,
   onOpen,
 }: {
   view: FriendView;
   selected: boolean;
-  target: IgEventRow | null;
+  targets: IgEventRow[];
   onToggle: () => void;
   onOpen: () => void;
 }) {
   const { friend, communities, attributes } = view;
   const name = friend.display_name.trim() || friend.username;
-  const inTarget = !!target && view.eventIds.has(target.id);
+  // 選んでいる招待先のうち、すでに招待リストに入っているイベント
+  const added = targets.filter((t) => view.eventIds.has(t.id));
   return (
     <article
       className="tn-card"
@@ -59,9 +60,10 @@ function FriendCard({
         <p className="tn-memo" data-empty={!friend.note.trim()}>
           {friend.note.trim() || "メモなし（カードを押して入力）"}
         </p>
-        {inTarget && (
+        {added.length > 0 && (
           <div className="tn-banner">
-            「{target.title}」<span className="tn-pc">の招待リスト</span>に追加済み
+            {added.map((t) => `「${t.title}」`).join("")}
+            <span className="tn-pc">の招待リスト</span>に追加済み
           </div>
         )}
       </div>
@@ -74,8 +76,8 @@ export default function FriendsView({
   tags,
   friendTags,
   upcoming,
-  target,
-  onTarget,
+  targets,
+  onToggleTarget,
   filter,
   onFilter,
   selected,
@@ -88,8 +90,8 @@ export default function FriendsView({
   tags: IgTagRow[];
   friendTags: IgFriendTagRow[];
   upcoming: IgEventRow[];
-  target: IgEventRow | null;
-  onTarget: (id: string) => void;
+  targets: IgEventRow[];
+  onToggleTarget: (id: string) => void;
   filter: FriendFilter;
   onFilter: (f: FriendFilter) => void;
   selected: Set<string>;
@@ -157,7 +159,14 @@ export default function FriendsView({
   );
 
   const targetChips = upcoming.map((e) => (
-    <button key={e.id} type="button" className="tn-chip" aria-pressed={target?.id === e.id} onClick={() => onTarget(e.id)}>
+    <button
+      key={e.id}
+      type="button"
+      className="tn-chip"
+      aria-pressed={targets.some((t) => t.id === e.id)}
+      onClick={() => onToggleTarget(e.id)}
+    >
+      {targets.some((t) => t.id === e.id) ? "✓ " : ""}
       {formatShortDate(e.event_date)} {e.title}
     </button>
   ));
@@ -339,7 +348,7 @@ export default function FriendsView({
               </div>
               {upcoming.length > 0 ? (
                 <>
-                  <span className="tn-selbar-label">招待先のイベント</span>
+                  <span className="tn-selbar-label">招待先のイベント（複数選べます）</span>
                   <div className="tn-chips tn-selbar-targets" style={{ gap: 6 }}>
                     {targetChips}
                   </div>
@@ -353,8 +362,8 @@ export default function FriendsView({
                 <button type="button" className="tn-selbar-clear" onClick={() => onSelected(new Set())}>
                   選択解除
                 </button>
-                <button type="button" className="tn-btn tn-btn-accent" disabled={!target || adding} onClick={add}>
-                  招待リストに追加
+                <button type="button" className="tn-btn tn-btn-accent" disabled={targets.length === 0 || adding} onClick={add}>
+                  {targets.length > 1 ? `${targets.length}つのイベントに追加` : "招待リストに追加"}
                 </button>
               </div>
             </div>
@@ -371,7 +380,7 @@ export default function FriendsView({
                   key={v.friend.id}
                   view={v}
                   selected={selected.has(v.friend.id)}
-                  target={target}
+                  targets={targets}
                   onToggle={() => toggle(v.friend.id)}
                   onOpen={() => setEditing(v)}
                 />
