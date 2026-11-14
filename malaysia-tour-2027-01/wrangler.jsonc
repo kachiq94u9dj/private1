@@ -1,0 +1,10 @@
+// 1月マレーシアツアー（第8回）旅のしおり — Cloudflare Workers の静的アセットとして公開する。
+// public/ の中身だけがそのまま公開される（ビルド不要）。
+{
+  "$schema": "https://unpkg.com/wrangler@4/config-schema.json",
+  "name": "malaysia-tour-2027-01",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./public"
+  }
+}

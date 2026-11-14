@@ -1,0 +1,80 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash",
+      "Read",
+      "Edit",
+      "Write",
+      "Glob",
+      "Grep",
+      "NotebookEdit",
+      "WebFetch",
+      "WebSearch",
+      "Agent",
+      "Skill",
+      "mcp__Notion",
+      "mcp__Google_Drive",
+      "mcp__Google_Sheets",
+      "mcp__Google_Slides",
+      "mcp__Google_Calendar",
+      "mcp__Gmail",
+      "mcp__Slack",
+      "mcp__TabAI2",
+      "mcp__Vercel",
+      "mcp__github",
+      "mcp__Claude_Docs"
+    ],
+    "ask": [
+      "Bash(rm -r *)",
+      "Bash(rm -rf *)",
+      "Bash(rm -fr *)",
+      "Bash(rm -R *)",
+      "Bash(rmdir *)",
+      "Bash(find * -delete*)",
+      "Bash(git clean *)",
+      "Bash(sudo *)",
+      "Bash(defaults write *)",
+      "Bash(systemsetup *)",
+      "Bash(networksetup *)",
+      "Bash(scutil *)",
+      "Bash(launchctl *)",
+      "Bash(crontab *)",
+      "Edit(~/.claude/settings.json)",
+      "Edit(.claude/settings.json)",
+      "Edit(~/.zshrc)",
+      "Edit(~/.bashrc)",
+      "mcp__Notion__notion-delete-pages",
+      "mcp__Notion__notion-delete-databases",
+      "mcp__Google_Drive__trash_file",
+      "mcp__Google_Drive__share_file",
+      "mcp__Google_Calendar__delete_event",
+      "mcp__Gmail__send_message",
+      "mcp__Gmail__reply",
+      "mcp__Gmail__forward",
+      "mcp__Gmail__trash_message",
+      "mcp__Gmail__trash_thread",
+      "mcp__Gmail__delete_label",
+      "mcp__Slack__slack_send_message",
+      "mcp__Slack__slack_schedule_message",
+      "mcp__Vercel__buy_domain",
+      "mcp__Vercel__create_or_transfer_domain",
+      "mcp__Vercel__update_project",
+      "mcp__Vercel__pause_project",
+      "mcp__Vercel__delete_sandbox",
+      "mcp__Vercel__delete_drive",
+      "mcp__github__delete_file"
+    ]
+  },
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '{\"hookSpecificOutput\":{\"hookEventName\":\"UserPromptSubmit\",\"additionalContext\":\"【グローバルルール】作業を始める前に、Notion「Kachi AIラボ」(41766e3a-4ccf-8069-81f2-d372ebaf8fed) と「Team Kazuhiro 基本ルール」(41766e3a-4ccf-81ce-b2ed-d7a6488804de) を notion-fetch で全文読んでから着手すること。詳細は CLAUDE.md。\"}}'"
+          }
+        ]
+      }
+    ]
+  }
+}
