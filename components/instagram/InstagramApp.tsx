@@ -20,6 +20,8 @@ import ImportModal from "./ImportModal";
 import { Icon, errorMessage } from "./ui";
 
 type Tab = "friends" | "events";
+
+const TARGETS_KEY = "tomodachi-note:target-event-ids";
 type Form = { mode: "create" } | { mode: "edit"; eventId: string } | null;
 
 function Brand() {
@@ -86,7 +88,15 @@ export default function InstagramApp() {
   const [friendFilter, setFriendFilter] = useState<FriendFilter>(EMPTY_FRIEND_FILTER);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   // 招待先のイベント（複数選べる）。null のあいだは、いちばん新しい募集中のイベントを選んだ状態として扱う。
-  const [targetIds, setTargetIds] = useState<string[] | null>(null);
+  // 再読み込みしても選択が戻らないよう、このブラウザに覚えておく。
+  const [targetIds, setTargetIds] = useState<string[] | null>(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(TARGETS_KEY) ?? "null");
+      return Array.isArray(saved) ? saved.filter((x): x is string => typeof x === "string") : null;
+    } catch {
+      return null;
+    }
+  });
   const [activeEventId, setActiveEventId] = useState<string | null>(null);
   const [inviteFilter, setInviteFilter] = useState<InviteFilter>("all");
   const [actionError, setActionError] = useState<string | null>(null);
@@ -100,7 +110,10 @@ export default function InstagramApp() {
   );
   const sortedEvents = useMemo(() => sortEvents(events), [events]);
   const upcoming = useMemo(() => sortedEvents.filter((e) => !isEnded(e, today)), [sortedEvents, today]);
-  const chosenIds = targetIds ?? (upcoming[0] ? [upcoming[0].id] : []);
+  // 覚えていたイベントが終わった・消えた場合は、最初の状態に戻す
+  const savedIds = targetIds?.filter((id) => upcoming.some((e) => e.id === id)) ?? null;
+  const chosenIds =
+    savedIds && (savedIds.length > 0 || targetIds?.length === 0) ? savedIds : upcoming[0] ? [upcoming[0].id] : [];
   const targets = upcoming.filter((e) => chosenIds.includes(e.id));
   const activeEvent = sortedEvents.find((e) => e.id === activeEventId) ?? sortedEvents[0] ?? null;
   const lastImport = friends.reduce<string | null>((max, f) => (!max || f.imported_at > max ? f.imported_at : max), null);
@@ -108,6 +121,14 @@ export default function InstagramApp() {
   useEffect(() => {
     if (loaded && friends.length === 0) setImporting(true);
   }, [loaded, friends.length]);
+
+  useEffect(() => {
+    try {
+      if (targetIds) localStorage.setItem(TARGETS_KEY, JSON.stringify(targetIds));
+    } catch {
+      // 保存できない環境（プライベートブラウズなど）では覚えないだけ
+    }
+  }, [targetIds]);
 
   useEffect(() => {
     if (!notice) return;

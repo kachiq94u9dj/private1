@@ -18,20 +18,20 @@ import { Avatar, CommunityChip, Icon, PersonName, SelectBox, TagChip, errorMessa
 function FriendCard({
   view,
   selected,
-  targets,
+  upcoming,
   onToggle,
   onOpen,
 }: {
   view: FriendView;
   selected: boolean;
-  targets: IgEventRow[];
+  upcoming: IgEventRow[];
   onToggle: () => void;
   onOpen: () => void;
 }) {
   const { friend, communities, attributes } = view;
   const name = friend.display_name.trim() || friend.username;
-  // 選んでいる招待先のうち、すでに招待リストに入っているイベント
-  const added = targets.filter((t) => view.eventIds.has(t.id));
+  // 招待リストに入っている、これからのイベントすべて（招待先の選択に関係なく表示する）
+  const added = upcoming.filter((e) => view.eventIds.has(e.id));
   return (
     <article
       className="tn-card"
@@ -380,7 +380,7 @@ export default function FriendsView({
                   key={v.friend.id}
                   view={v}
                   selected={selected.has(v.friend.id)}
-                  targets={targets}
+                  upcoming={upcoming}
                   onToggle={() => toggle(v.friend.id)}
                   onOpen={() => setEditing(v)}
                 />
