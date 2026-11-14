@@ -62,8 +62,7 @@
       "mcp__Vercel__pause_project",
       "mcp__Vercel__delete_sandbox",
       "mcp__Vercel__delete_drive",
-      "mcp__github__delete_file",
-      "mcp__github__merge_pull_request"
+      "mcp__github__delete_file"
     ]
   },
   "hooks": {
