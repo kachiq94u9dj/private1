@@ -85,7 +85,8 @@ export default function InstagramApp() {
   // 画面をまたいで保つ状態（イベント作成 → 友達一覧で候補を選んだまま移る、など）
   const [friendFilter, setFriendFilter] = useState<FriendFilter>(EMPTY_FRIEND_FILTER);
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [targetId, setTargetId] = useState<string | null>(null);
+  // 招待先のイベント（複数選べる）。null のあいだは、いちばん新しい募集中のイベントを選んだ状態として扱う。
+  const [targetIds, setTargetIds] = useState<string[] | null>(null);
   const [activeEventId, setActiveEventId] = useState<string | null>(null);
   const [inviteFilter, setInviteFilter] = useState<InviteFilter>("all");
   const [actionError, setActionError] = useState<string | null>(null);
@@ -99,7 +100,8 @@ export default function InstagramApp() {
   );
   const sortedEvents = useMemo(() => sortEvents(events), [events]);
   const upcoming = useMemo(() => sortedEvents.filter((e) => !isEnded(e, today)), [sortedEvents, today]);
-  const target = upcoming.find((e) => e.id === targetId) ?? upcoming[0] ?? null;
+  const chosenIds = targetIds ?? (upcoming[0] ? [upcoming[0].id] : []);
+  const targets = upcoming.filter((e) => chosenIds.includes(e.id));
   const activeEvent = sortedEvents.find((e) => e.id === activeEventId) ?? sortedEvents[0] ?? null;
   const lastImport = friends.reduce<string | null>((max, f) => (!max || f.imported_at > max ? f.imported_at : max), null);
 
@@ -120,14 +122,15 @@ export default function InstagramApp() {
   }
 
   async function addSelectedToTarget() {
-    if (!target || selected.size === 0) return;
+    if (targets.length === 0 || selected.size === 0) return;
     try {
       const count = selected.size;
-      await addAttendees(target.id, [...selected]);
+      for (const t of targets) await addAttendees(t.id, [...selected]);
       await reload();
       setSelected(new Set());
       setActionError(null);
-      setNotice({ text: `${count}人を「${target.title}」の招待リストに追加しました`, eventId: target.id });
+      const titles = targets.map((t) => `「${t.title}」`).join("");
+      setNotice({ text: `${count}人を${titles}の招待リストに追加しました`, eventId: targets[0].id });
     } catch (e) {
       setActionError(`招待リストに追加できませんでした: ${errorMessage(e)}`);
     }
@@ -187,7 +190,7 @@ export default function InstagramApp() {
             onCancel={() => setForm(null)}
             onCreated={async (id, candidateIds) => {
               await reload();
-              setTargetId(id);
+              setTargetIds([id]);
               setActiveEventId(id);
               setSelected(new Set(candidateIds));
               setFriendFilter(EMPTY_FRIEND_FILTER);
@@ -209,8 +212,10 @@ export default function InstagramApp() {
             tags={tags}
             friendTags={friendTags}
             upcoming={upcoming}
-            target={target}
-            onTarget={setTargetId}
+            targets={targets}
+            onToggleTarget={(id) =>
+              setTargetIds(chosenIds.includes(id) ? chosenIds.filter((x) => x !== id) : [...chosenIds, id])
+            }
             filter={friendFilter}
             onFilter={setFriendFilter}
             selected={selected}
@@ -235,7 +240,7 @@ export default function InstagramApp() {
             onCreate={() => setForm({ mode: "create" })}
             onEdit={(id) => setForm({ mode: "edit", eventId: id })}
             onInviteMore={(id) => {
-              if (upcoming.some((e) => e.id === id)) setTargetId(id);
+              if (upcoming.some((e) => e.id === id)) setTargetIds([id]);
               go("friends");
             }}
             onChanged={reload}
