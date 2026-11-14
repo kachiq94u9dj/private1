@@ -9,8 +9,8 @@
     "collect": "tsx scripts/collect-usage.ts",
     "test:instagram": "tsx scripts/test-instagram-parse.ts",
     "check:instagram": "tsx scripts/check-instagram-export.ts",
-    "preview": "opennextjs-cloudflare preview",
-    "deploy": "wrangler deploy",
+    "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
+    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts"
   },
   "dependencies": {
