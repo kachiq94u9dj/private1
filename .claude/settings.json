@@ -1,0 +1,94 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash",
+      "Read",
+      "Edit",
+      "Write",
+      "Glob",
+      "Grep",
+      "WebFetch",
+      "WebSearch",
+      "NotebookEdit",
+      "mcp__Notion",
+      "mcp__github",
+      "mcp__Google_Drive",
+      "mcp__Google_Sheets",
+      "mcp__Google_Calendar",
+      "mcp__Gmail",
+      "mcp__Slack",
+      "mcp__Supabase",
+      "mcp__Vercel",
+      "mcp__TabAI",
+      "mcp__Claude_Docs"
+    ],
+    "ask": [
+      "Bash(rm -rf *)",
+      "Bash(rm -r *)",
+      "Bash(rm -fr *)",
+      "Bash(rmdir *)",
+      "Bash(sudo *)",
+      "Bash(defaults write *)",
+      "Bash(systemsetup *)",
+      "Bash(networksetup *)",
+      "Bash(launchctl *)",
+      "Bash(chmod -R *)",
+      "Bash(chown -R *)",
+      "Bash(brew uninstall *)",
+      "Bash(npm install -g *)",
+      "Bash(git push --force *)",
+      "Bash(git push -f *)",
+      "Bash(git reset --hard *)",
+      "Bash(git clean *)",
+      "mcp__Vercel__buy_domain",
+      "mcp__Vercel__create_or_transfer_domain",
+      "mcp__Vercel__get_purchase_quote",
+      "mcp__Vercel__list_billing_charges",
+      "mcp__Vercel__delete_drive",
+      "mcp__Vercel__delete_sandbox",
+      "mcp__Vercel__pause_project",
+      "mcp__Vercel__put_firewall_config",
+      "mcp__Vercel__update_firewall_config",
+      "mcp__Vercel__update_project",
+      "mcp__Vercel__edit_project_env",
+      "mcp__Vercel__create_project_env",
+      "mcp__Vercel__request_promote",
+      "mcp__Vercel__request_rollback",
+      "mcp__Supabase__create_project",
+      "mcp__Supabase__create_branch",
+      "mcp__Supabase__pause_project",
+      "mcp__Supabase__restore_project",
+      "mcp__Supabase__delete_branch",
+      "mcp__Supabase__reset_branch",
+      "mcp__Supabase__merge_branch",
+      "mcp__Supabase__apply_migration",
+      "mcp__Notion__notion-delete-pages",
+      "mcp__Notion__notion-delete-databases",
+      "mcp__Google_Drive__trash_file",
+      "mcp__Google_Drive__share_file",
+      "mcp__Google_Calendar__delete_event",
+      "mcp__Gmail__send_message",
+      "mcp__Gmail__reply",
+      "mcp__Gmail__forward",
+      "mcp__Gmail__trash_message",
+      "mcp__Gmail__trash_thread",
+      "mcp__Slack__slack_send_message",
+      "mcp__Slack__slack_schedule_message",
+      "mcp__TabAI__delete_task",
+      "mcp__github__merge_pull_request",
+      "mcp__github__delete_file"
+    ]
+  },
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '{\"hookSpecificOutput\":{\"hookEventName\":\"UserPromptSubmit\",\"additionalContext\":\"【必須】作業前にNotion「Kachi AIラボ」(https://app.notion.com/p/41766e3a4ccf806981f2d372ebaf8fed)とチーム・ナレッジベースの全ページ（全体ルール・技術スタック）をnotion-fetchで読んでから着手すること。ユーザーは「和弘さん」と呼ぶ。\"}}'"
+          }
+        ]
+      }
+    ]
+  }
+}
